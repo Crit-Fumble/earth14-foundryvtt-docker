@@ -1159,3 +1159,504 @@
 {"level":"info","message":"FoundryVTT | Extracted base64 asset: \"/data/foundryvtt/Data/worlds/toril-cfg-xxii/assets/scenes/VpTT1Q8fjuHMC4sM-thumb.webp\"","timestamp":"2024-02-20 03:56:07"}
 {"level":"info","message":"FoundryVTT | Deleted Scene with id [xfQtwwKBnjodDqMY]","timestamp":"2024-02-20 03:57:06"}
 {"level":"info","message":"FoundryVTT | Deleted Scene with id [VpTT1Q8fjuHMC4sM]","timestamp":"2024-02-20 03:57:09"}
+{"level":"info","message":"Running on Node.js - Version 16.20.2","timestamp":"2024-03-14 03:09:31"}
+{"level":"info","message":"Foundry Virtual Tabletop - Version 11 Build 315","timestamp":"2024-03-14 03:09:31"}
+{"level":"info","message":"User Data Directory - \"/data/foundryvtt\"","timestamp":"2024-03-14 03:09:31"}
+{"level":"info","message":"Application Options:\n{\n  \"compressStatic\": true,\n  \"fullscreen\": false,\n  \"hostname\": null,\n  \"language\": \"en.core\",\n  \"localHostname\": null,\n  \"port\": 30000,\n  \"protocol\": null,\n  \"proxyPort\": null,\n  \"proxySSL\": false,\n  \"routePrefix\": null,\n  \"updateChannel\": \"stable\",\n  \"upnp\": true,\n  \"upnpLeaseDuration\": null,\n  \"awsConfig\": null,\n  \"compressSocket\": true,\n  \"cssTheme\": \"foundry\",\n  \"deleteNEDB\": false,\n  \"hotReload\": false,\n  \"passwordSalt\": null,\n  \"sslCert\": null,\n  \"sslKey\": null,\n  \"world\": \"toril-cfg-xxii\",\n  \"serviceConfig\": null,\n  \"telemetry\": true,\n  \"adminPassword\": \"••••••••••••••••\",\n  \"noBackups\": false\n}","timestamp":"2024-03-14 03:09:31"}
+{"level":"error","message":"Software license verification failed. Please confirm your Foundry Virtual Tabletop software license","timestamp":"2024-03-14 03:09:31"}
+{"level":"info","message":"Requesting UPnP port forwarding to destination port 30000","timestamp":"2024-03-14 03:09:31"}
+{"level":"info","message":"Server started and listening on port 30000","timestamp":"2024-03-14 03:09:31"}
+{"level":"info","message":"Created client session 438b24de853cd4ad3e3c0784","timestamp":"2024-03-14 03:11:11"}
+{"level":"warn","message":"module \"poi-teleport\" declares media.link which is unsupported, media.url should be used\nDeprecated since Version 11\nBackwards-compatible support will be removed in Version 13","timestamp":"2024-03-14 03:11:11"}
+{"level":"info","message":"License signature successfully created. Thank you and please enjoy Foundry Virtual Tabletop.","timestamp":"2024-03-14 03:11:18"}
+{"level":"info","message":"Software license verification succeeded","timestamp":"2024-03-14 03:11:18"}
+{"ip":"::ffff:192.168.65.1","level":"warn","message":"Administrator authentication failed for session 438b24de853cd4ad3e3c0784; invalid password","status":403,"timestamp":"2024-03-14 03:11:32"}
+{"level":"info","message":"Administrator authentication successful for session 438b24de853cd4ad3e3c0784","timestamp":"2024-03-14 03:11:35"}
+{"level":"warn","message":"module \"poi-teleport\" declares media.link which is unsupported, media.url should be used\nDeprecated since Version 11\nBackwards-compatible support will be removed in Version 13","timestamp":"2024-03-14 03:11:52"}
+{"level":"info","message":"Downloading Package - 1%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 2%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 3%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 4%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 5%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 6%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 7%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 8%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 9%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 10%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 11%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 12%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 13%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 14%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 15%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 16%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 17%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 18%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 19%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 20%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 21%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 22%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 23%","timestamp":"2024-03-14 03:11:56"}
+{"level":"info","message":"Downloading Package - 24%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 25%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 26%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 27%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 28%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 29%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 30%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 31%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 32%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 33%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 34%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 35%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 36%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 37%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 38%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 39%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 40%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 41%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 42%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 43%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 44%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 45%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 46%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 47%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 48%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 49%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 50%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 51%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 52%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 53%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 54%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 55%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 56%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 57%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 58%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 59%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 60%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 61%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 62%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 63%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 64%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 65%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 66%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 67%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 68%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 69%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 70%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 71%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 72%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 73%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 74%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 75%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 76%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 77%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 78%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 79%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 80%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 81%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 82%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 83%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 84%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 85%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 86%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 87%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 88%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 89%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 90%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 91%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 92%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 93%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 94%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 95%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 96%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 97%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 98%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 99%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Downloading Package - 100%","timestamp":"2024-03-14 03:11:57"}
+{"level":"info","message":"Installing package - 0%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 1%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 2%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 3%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 4%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 5%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 6%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 7%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 8%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 9%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 10%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 11%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 12%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 13%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 14%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 15%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 16%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 17%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 18%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 19%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 20%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 21%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 22%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 23%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 24%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 25%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 26%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 27%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 28%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 29%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 30%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 31%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 32%","timestamp":"2024-03-14 03:11:58"}
+{"level":"info","message":"Installing package - 33%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 34%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 35%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 36%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 37%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 38%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 39%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 40%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 41%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 42%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 43%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 44%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 45%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 46%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 47%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 48%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 49%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 50%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 51%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 52%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 53%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 54%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 55%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 56%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 57%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Downloading Package - 1%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 58%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Downloading Package - 2%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 59%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 60%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Downloading Package - 3%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 61%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 62%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Downloading Package - 4%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 63%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 64%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 65%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 66%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 67%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 68%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Downloading Package - 5%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 69%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 70%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 71%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 72%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 73%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Downloading Package - 6%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 74%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 75%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 76%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 77%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 78%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Downloading Package - 7%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 79%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 80%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 81%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 82%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 83%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Downloading Package - 8%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 84%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 85%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 86%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 87%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 88%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 89%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Downloading Package - 9%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 90%","timestamp":"2024-03-14 03:11:59"}
+{"level":"info","message":"Installing package - 91%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Installing package - 92%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Installing package - 93%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Installing package - 94%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Installing package - 95%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Installing package - 96%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Installing package - 97%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Installing package - 98%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Installing package - 99%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Installing package - 100%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Cleaning Up Artifacts - 100%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Installation Complete - 100%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"FoundryVTT | Installed module ddb-importer","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"FoundryVTT | Applied sidegrade metadata updates to module ddb-importer","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Vending Package - 100%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Downloading Package - 10%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Downloading Package - 11%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Downloading Package - 12%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Downloading Package - 13%","timestamp":"2024-03-14 03:12:00"}
+{"level":"info","message":"Downloading Package - 14%","timestamp":"2024-03-14 03:12:01"}
+{"level":"info","message":"Downloading Package - 15%","timestamp":"2024-03-14 03:12:01"}
+{"level":"info","message":"Downloading Package - 16%","timestamp":"2024-03-14 03:12:01"}
+{"level":"info","message":"Downloading Package - 17%","timestamp":"2024-03-14 03:12:01"}
+{"level":"info","message":"Downloading Package - 18%","timestamp":"2024-03-14 03:12:01"}
+{"level":"info","message":"Downloading Package - 19%","timestamp":"2024-03-14 03:12:02"}
+{"level":"info","message":"Downloading Package - 20%","timestamp":"2024-03-14 03:12:02"}
+{"level":"info","message":"Downloading Package - 21%","timestamp":"2024-03-14 03:12:02"}
+{"level":"info","message":"Downloading Package - 22%","timestamp":"2024-03-14 03:12:02"}
+{"level":"info","message":"Downloading Package - 23%","timestamp":"2024-03-14 03:12:03"}
+{"level":"info","message":"Downloading Package - 24%","timestamp":"2024-03-14 03:12:03"}
+{"level":"info","message":"Downloading Package - 25%","timestamp":"2024-03-14 03:12:03"}
+{"level":"info","message":"Downloading Package - 26%","timestamp":"2024-03-14 03:12:03"}
+{"level":"info","message":"Downloading Package - 27%","timestamp":"2024-03-14 03:12:03"}
+{"level":"info","message":"Downloading Package - 28%","timestamp":"2024-03-14 03:12:03"}
+{"level":"info","message":"Downloading Package - 29%","timestamp":"2024-03-14 03:12:03"}
+{"level":"info","message":"Downloading Package - 30%","timestamp":"2024-03-14 03:12:04"}
+{"level":"info","message":"Downloading Package - 31%","timestamp":"2024-03-14 03:12:04"}
+{"level":"info","message":"Downloading Package - 32%","timestamp":"2024-03-14 03:12:04"}
+{"level":"info","message":"Downloading Package - 33%","timestamp":"2024-03-14 03:12:04"}
+{"level":"info","message":"Downloading Package - 34%","timestamp":"2024-03-14 03:12:04"}
+{"level":"info","message":"Downloading Package - 35%","timestamp":"2024-03-14 03:12:05"}
+{"level":"info","message":"Downloading Package - 36%","timestamp":"2024-03-14 03:12:05"}
+{"level":"info","message":"Downloading Package - 37%","timestamp":"2024-03-14 03:12:05"}
+{"level":"info","message":"Downloading Package - 38%","timestamp":"2024-03-14 03:12:05"}
+{"level":"info","message":"Downloading Package - 39%","timestamp":"2024-03-14 03:12:05"}
+{"level":"info","message":"Downloading Package - 40%","timestamp":"2024-03-14 03:12:06"}
+{"level":"info","message":"Downloading Package - 41%","timestamp":"2024-03-14 03:12:06"}
+{"level":"info","message":"Downloading Package - 42%","timestamp":"2024-03-14 03:12:06"}
+{"level":"info","message":"Downloading Package - 43%","timestamp":"2024-03-14 03:12:06"}
+{"level":"info","message":"Downloading Package - 44%","timestamp":"2024-03-14 03:12:06"}
+{"level":"info","message":"Downloading Package - 45%","timestamp":"2024-03-14 03:12:07"}
+{"level":"info","message":"Downloading Package - 46%","timestamp":"2024-03-14 03:12:07"}
+{"level":"info","message":"Downloading Package - 47%","timestamp":"2024-03-14 03:12:07"}
+{"level":"info","message":"Downloading Package - 48%","timestamp":"2024-03-14 03:12:07"}
+{"level":"info","message":"Downloading Package - 49%","timestamp":"2024-03-14 03:12:07"}
+{"level":"info","message":"Downloading Package - 50%","timestamp":"2024-03-14 03:12:08"}
+{"level":"info","message":"Downloading Package - 51%","timestamp":"2024-03-14 03:12:08"}
+{"level":"info","message":"Downloading Package - 52%","timestamp":"2024-03-14 03:12:08"}
+{"level":"info","message":"Downloading Package - 53%","timestamp":"2024-03-14 03:12:08"}
+{"level":"info","message":"Downloading Package - 54%","timestamp":"2024-03-14 03:12:08"}
+{"level":"info","message":"Downloading Package - 55%","timestamp":"2024-03-14 03:12:08"}
+{"level":"info","message":"Downloading Package - 56%","timestamp":"2024-03-14 03:12:08"}
+{"level":"info","message":"Downloading Package - 57%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 58%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 59%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 60%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 61%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 62%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 63%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 64%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 65%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 66%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 67%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 68%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 69%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 70%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 71%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 72%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 73%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 74%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 75%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 76%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 77%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 78%","timestamp":"2024-03-14 03:12:09"}
+{"level":"info","message":"Downloading Package - 79%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 80%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 81%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 82%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 83%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 84%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 85%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 86%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 87%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 88%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 89%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 90%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 91%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 92%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 93%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 94%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 95%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 96%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 97%","timestamp":"2024-03-14 03:12:10"}
+{"level":"info","message":"Downloading Package - 98%","timestamp":"2024-03-14 03:12:11"}
+{"level":"info","message":"Downloading Package - 99%","timestamp":"2024-03-14 03:12:11"}
+{"level":"info","message":"Downloading Package - 100%","timestamp":"2024-03-14 03:12:11"}
+{"level":"info","message":"Installing package - 0%","timestamp":"2024-03-14 03:12:13"}
+{"level":"info","message":"Installing package - 1%","timestamp":"2024-03-14 03:12:13"}
+{"level":"info","message":"Installing package - 2%","timestamp":"2024-03-14 03:12:13"}
+{"level":"info","message":"Installing package - 3%","timestamp":"2024-03-14 03:12:13"}
+{"level":"info","message":"Installing package - 4%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 5%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 6%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 7%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 8%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 9%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 10%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 11%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 12%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 13%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 14%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 15%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 16%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 17%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 18%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 19%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 20%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 21%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 22%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 23%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 24%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 25%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 26%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 27%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 28%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 29%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 30%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 31%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 32%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 33%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 34%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 35%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 36%","timestamp":"2024-03-14 03:12:14"}
+{"level":"info","message":"Installing package - 37%","timestamp":"2024-03-14 03:12:15"}
+{"level":"info","message":"Installing package - 38%","timestamp":"2024-03-14 03:12:15"}
+{"level":"info","message":"Installing package - 39%","timestamp":"2024-03-14 03:12:15"}
+{"level":"info","message":"Installing package - 40%","timestamp":"2024-03-14 03:12:15"}
+{"level":"info","message":"Installing package - 41%","timestamp":"2024-03-14 03:12:15"}
+{"level":"info","message":"Installing package - 42%","timestamp":"2024-03-14 03:12:15"}
+{"level":"info","message":"Installing package - 43%","timestamp":"2024-03-14 03:12:15"}
+{"level":"info","message":"Installing package - 44%","timestamp":"2024-03-14 03:12:15"}
+{"level":"info","message":"Installing package - 45%","timestamp":"2024-03-14 03:12:15"}
+{"level":"info","message":"Installing package - 46%","timestamp":"2024-03-14 03:12:15"}
+{"level":"info","message":"Installing package - 47%","timestamp":"2024-03-14 03:12:15"}
+{"level":"info","message":"Installing package - 48%","timestamp":"2024-03-14 03:12:15"}
+{"level":"info","message":"Installing package - 49%","timestamp":"2024-03-14 03:12:15"}
+{"level":"info","message":"Installing package - 50%","timestamp":"2024-03-14 03:12:15"}
+{"level":"info","message":"Installing package - 51%","timestamp":"2024-03-14 03:12:16"}
+{"level":"info","message":"Installing package - 52%","timestamp":"2024-03-14 03:12:16"}
+{"level":"info","message":"Installing package - 53%","timestamp":"2024-03-14 03:12:16"}
+{"level":"info","message":"Installing package - 54%","timestamp":"2024-03-14 03:12:16"}
+{"level":"info","message":"Installing package - 55%","timestamp":"2024-03-14 03:12:16"}
+{"level":"info","message":"Installing package - 56%","timestamp":"2024-03-14 03:12:16"}
+{"level":"info","message":"Installing package - 57%","timestamp":"2024-03-14 03:12:16"}
+{"level":"info","message":"Installing package - 58%","timestamp":"2024-03-14 03:12:16"}
+{"level":"info","message":"Installing package - 59%","timestamp":"2024-03-14 03:12:16"}
+{"level":"info","message":"Installing package - 60%","timestamp":"2024-03-14 03:12:16"}
+{"level":"info","message":"Installing package - 61%","timestamp":"2024-03-14 03:12:16"}
+{"level":"info","message":"Installing package - 62%","timestamp":"2024-03-14 03:12:16"}
+{"level":"info","message":"Installing package - 63%","timestamp":"2024-03-14 03:12:16"}
+{"level":"info","message":"Installing package - 64%","timestamp":"2024-03-14 03:12:16"}
+{"level":"info","message":"Installing package - 65%","timestamp":"2024-03-14 03:12:17"}
+{"level":"info","message":"Installing package - 66%","timestamp":"2024-03-14 03:12:17"}
+{"level":"info","message":"Installing package - 67%","timestamp":"2024-03-14 03:12:17"}
+{"level":"info","message":"Installing package - 68%","timestamp":"2024-03-14 03:12:17"}
+{"level":"info","message":"Installing package - 69%","timestamp":"2024-03-14 03:12:17"}
+{"level":"info","message":"Installing package - 70%","timestamp":"2024-03-14 03:12:18"}
+{"level":"info","message":"Installing package - 71%","timestamp":"2024-03-14 03:12:18"}
+{"level":"info","message":"Installing package - 72%","timestamp":"2024-03-14 03:12:18"}
+{"level":"info","message":"Installing package - 73%","timestamp":"2024-03-14 03:12:18"}
+{"level":"info","message":"Installing package - 74%","timestamp":"2024-03-14 03:12:18"}
+{"level":"info","message":"Installing package - 75%","timestamp":"2024-03-14 03:12:18"}
+{"level":"info","message":"Installing package - 76%","timestamp":"2024-03-14 03:12:18"}
+{"level":"info","message":"Installing package - 77%","timestamp":"2024-03-14 03:12:18"}
+{"level":"info","message":"Installing package - 78%","timestamp":"2024-03-14 03:12:18"}
+{"level":"info","message":"Installing package - 79%","timestamp":"2024-03-14 03:12:18"}
+{"level":"info","message":"Installing package - 80%","timestamp":"2024-03-14 03:12:19"}
+{"level":"info","message":"Installing package - 81%","timestamp":"2024-03-14 03:12:19"}
+{"level":"info","message":"Installing package - 82%","timestamp":"2024-03-14 03:12:19"}
+{"level":"info","message":"Installing package - 83%","timestamp":"2024-03-14 03:12:20"}
+{"level":"info","message":"Installing package - 84%","timestamp":"2024-03-14 03:12:20"}
+{"level":"info","message":"Installing package - 85%","timestamp":"2024-03-14 03:12:20"}
+{"level":"info","message":"Installing package - 86%","timestamp":"2024-03-14 03:12:20"}
+{"level":"info","message":"Installing package - 87%","timestamp":"2024-03-14 03:12:20"}
+{"level":"info","message":"Installing package - 88%","timestamp":"2024-03-14 03:12:20"}
+{"level":"info","message":"Installing package - 89%","timestamp":"2024-03-14 03:12:21"}
+{"level":"info","message":"Installing package - 90%","timestamp":"2024-03-14 03:12:21"}
+{"level":"info","message":"Installing package - 91%","timestamp":"2024-03-14 03:12:21"}
+{"level":"info","message":"Installing package - 92%","timestamp":"2024-03-14 03:12:21"}
+{"level":"info","message":"Installing package - 93%","timestamp":"2024-03-14 03:12:21"}
+{"level":"info","message":"Installing package - 94%","timestamp":"2024-03-14 03:12:21"}
+{"level":"info","message":"Installing package - 95%","timestamp":"2024-03-14 03:12:21"}
+{"level":"info","message":"Installing package - 96%","timestamp":"2024-03-14 03:12:21"}
+{"level":"info","message":"Installing package - 97%","timestamp":"2024-03-14 03:12:21"}
+{"level":"info","message":"Installing package - 98%","timestamp":"2024-03-14 03:12:22"}
+{"level":"info","message":"Installing package - 99%","timestamp":"2024-03-14 03:12:22"}
+{"level":"info","message":"Installing package - 100%","timestamp":"2024-03-14 03:12:22"}
+{"level":"info","message":"Cleaning Up Artifacts - 100%","timestamp":"2024-03-14 03:12:22"}
+{"level":"info","message":"Installation Complete - 100%","timestamp":"2024-03-14 03:12:22"}
+{"level":"info","message":"FoundryVTT | Installed system dnd5e","timestamp":"2024-03-14 03:12:22"}
+{"level":"info","message":"Vending Package - 100%","timestamp":"2024-03-14 03:12:22"}
+{"level":"warn","message":"module \"poi-teleport\" declares media.link which is unsupported, media.url should be used\nDeprecated since Version 11\nBackwards-compatible support will be removed in Version 13","timestamp":"2024-03-14 03:12:29"}
+{"level":"info","message":"Writing backup for world 'earth-cfg-xiv'.","timestamp":"2024-03-14 03:12:43"}
+{"level":"info","message":"createBackup archive progress - 100%","timestamp":"2024-03-14 03:12:43"}
+{"level":"info","message":"Wrote backup for world 'earth-cfg-xiv' to '/data/foundryvtt/Backups/worlds/earth-cfg-xiv/world.earth-cfg-xiv.2024-03-14.1710385963799.bak'. Wrote 348 bytes.","timestamp":"2024-03-14 03:12:43"}
+{"level":"warn","message":"module \"poi-teleport\" declares media.link which is unsupported, media.url should be used\nDeprecated since Version 11\nBackwards-compatible support will be removed in Version 13","timestamp":"2024-03-14 03:12:43"}
+{"level":"info","message":"FoundryVTT | Connected to database \"actors\"","timestamp":"2024-03-14 03:12:43"}
+{"level":"info","message":"FoundryVTT | Connected to database \"cards\"","timestamp":"2024-03-14 03:12:43"}
+{"level":"info","message":"FoundryVTT | Connected to database \"messages\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"combats\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"drawings\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"fog\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"folders\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"items\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"journal\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"macros\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"playlists\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"tables\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"scenes\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"settings\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"users\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Created Setting with id [dtzD55N9AcFs2tGy]","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Created Setting with id [848oCXoEcMW5g9Qe]","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Created User with id [LiXRQNoAH0DXc8V3]","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"dnd5e.heroes\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"dnd5e.monsters\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"dnd5e.items\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"dnd5e.tradegoods\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"dnd5e.spells\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"dnd5e.backgrounds\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"dnd5e.classes\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"dnd5e.subclasses\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"dnd5e.classfeatures\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"dnd5e.races\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"dnd5e.monsterfeatures\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"dnd5e.rules\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Connected to database \"dnd5e.tables\"","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Created 4 Folder documents with ids: [69G7Xu4KaZiRl3ME,CwLsKkl5pMxsk9gw,ccjyx3fUdQH7NBpM,umqNH87F4Q5dOwvh]","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Created Setting with id [sfAH303Yu7Tm4JxP]","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Created Setting with id [Y609n44LBAVnkGKS]","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"Migrating World earth-cfg-xiv to upgraded dnd5e System version 3.0.4","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Migrating Actor documents to the latest game system data model","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"Successfully migrated 0 Actor documents to the latest system data model.","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Migrating Cards documents to the latest game system data model","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"Successfully migrated 0 Cards documents to the latest system data model.","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Migrating Item documents to the latest game system data model","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"Successfully migrated 0 Item documents to the latest system data model.","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"FoundryVTT | Migrating Scene documents to the latest game system data model","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"Successfully migrated 0 Scene documents to the latest system data model.","timestamp":"2024-03-14 03:12:44"}
+{"level":"info","message":"Migration of World earth-cfg-xiv was successful to dnd5e System version 3.0.4","timestamp":"2024-03-14 03:12:44"}
+{"ip":"::ffff:192.168.65.1","level":"info","message":"User authentication successful for user Gamemaster","session":"438b24de853cd4ad3e3c0784","timestamp":"2024-03-14 03:12:47"}
+{"level":"info","message":"No system update for Dungeons & Dragons Fifth Edition is currently available.","timestamp":"2024-03-14 03:12:48"}
+{"level":"info","message":"Vended World data to User [LiXRQNoAH0DXc8V3] in 293ms","timestamp":"2024-03-14 03:12:48"}
+{"level":"info","message":"FoundryVTT | Created Setting with id [LgXFFaZPaOBeryJg]","timestamp":"2024-03-14 03:12:49"}
+{"level":"info","message":"FoundryVTT | Created 2 ChatMessage documents with ids: [0ly8iGJ16uIYRhHd,Oy0H9k60OGEqqkvP]","timestamp":"2024-03-14 03:12:49"}
+{"level":"info","message":"FoundryVTT | Created Setting with id [gpdQdbRADUnVSTqv]","timestamp":"2024-03-14 03:12:49"}
+{"level":"info","message":"Activating scene Foundry Virtual Tabletop [UJ1nmh93TasLccle]","timestamp":"2024-03-14 03:12:49"}
+{"level":"info","message":"FoundryVTT | Created Scene with id [UJ1nmh93TasLccle]","timestamp":"2024-03-14 03:12:49"}
+{"level":"info","message":"FoundryVTT | Created Scene with id [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:14:03"}
+{"level":"info","message":"FoundryVTT | Extracted base64 asset: \"/data/foundryvtt/Data/worlds/earth-cfg-xiv/assets/scenes/zXOkbPI4mai8DP9H-thumb.webp\"","timestamp":"2024-03-14 03:14:54"}
+{"level":"info","message":"FoundryVTT | Extracted base64 asset: \"/data/foundryvtt/Data/worlds/earth-cfg-xiv/assets/scenes/zXOkbPI4mai8DP9H-thumb.webp\"","timestamp":"2024-03-14 03:15:07"}
+{"level":"info","message":"Activating scene 776 BC World Map [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:17:49"}
+{"level":"info","message":"FoundryVTT | Extracted base64 asset: \"/data/foundryvtt/Data/worlds/earth-cfg-xiv/assets/scenes/zXOkbPI4mai8DP9H-thumb.webp\"","timestamp":"2024-03-14 03:19:57"}
+{"level":"info","message":"FoundryVTT | Created MeasuredTemplate with id [1qX3MAMTcHnKp8kl] in parent Scene [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:22:18"}
+{"level":"info","message":"FoundryVTT | Created MeasuredTemplate with id [GCqrZ0REknKmIn00] in parent Scene [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:22:42"}
+{"level":"info","message":"FoundryVTT | Deleted MeasuredTemplate with id [GCqrZ0REknKmIn00] in parent Scene [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:22:44"}
+{"level":"info","message":"FoundryVTT | Deleted MeasuredTemplate with id [1qX3MAMTcHnKp8kl] in parent Scene [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:23:16"}
+{"level":"info","message":"FoundryVTT | Created MeasuredTemplate with id [z4Fu6Mfs8dcyDM1C] in parent Scene [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:23:33"}
+{"level":"info","message":"FoundryVTT | Created MeasuredTemplate with id [HdyliA4sqL3AymoY] in parent Scene [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:23:40"}
+{"level":"info","message":"FoundryVTT | Deleted MeasuredTemplate with id [z4Fu6Mfs8dcyDM1C] in parent Scene [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:23:42"}
+{"level":"info","message":"FoundryVTT | Deleted MeasuredTemplate with id [HdyliA4sqL3AymoY] in parent Scene [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:23:44"}
+{"level":"info","message":"FoundryVTT | Created MeasuredTemplate with id [QJ7ohWTj1SRIMUc9] in parent Scene [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:23:50"}
+{"level":"info","message":"FoundryVTT | Deleted MeasuredTemplate with id [QJ7ohWTj1SRIMUc9] in parent Scene [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:24:18"}
+{"level":"info","message":"FoundryVTT | Created MeasuredTemplate with id [kG8LTSaJqD31Z8JJ] in parent Scene [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:24:24"}
+{"level":"info","message":"FoundryVTT | Deleted MeasuredTemplate with id [kG8LTSaJqD31Z8JJ] in parent Scene [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:24:53"}
+{"level":"info","message":"FoundryVTT | Created MeasuredTemplate with id [mL8jxZhdoeWaNT91] in parent Scene [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:24:57"}
+{"level":"info","message":"FoundryVTT | Deleted Scene with id [zXOkbPI4mai8DP9H]","timestamp":"2024-03-14 03:28:39"}

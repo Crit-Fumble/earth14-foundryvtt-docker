@@ -1,5 +1,5 @@
 {
-  "timestamp": 1708398875909,
+  "timestamp": 1710385895627,
   "os": {
     "platform": "linux",
     "version": "Alpine Linux v3.18",
@@ -11,16 +11,33 @@
     "channel": "stable",
     "hosting": null
   },
-  "modules": {},
+  "modules": {
+    "ddb-importer": {
+      "version": "4.0.7"
+    },
+    "foundryvtt-dungen": {
+      "version": "1.0.1"
+    },
+    "poi-teleport": {
+      "version": "0.3.0"
+    },
+    "stairways": {
+      "version": "0.10.2"
+    }
+  },
   "systems": {
+    "cyphersystem": {
+      "version": "2.13.1",
+      "playtime": 0
+    },
     "dnd5e": {
       "version": "3.0.2",
-      "playtime": 35534
+      "playtime": 0
     }
   },
   "worlds": {},
   "playtime": {
-    "total": 35534,
-    "max": 33798
+    "total": 0,
+    "max": 0
   }
 }

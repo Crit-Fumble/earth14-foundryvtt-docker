@@ -16,6 +16,8 @@
       "custom-proxy.hint": "Tick if using a custom proxy and enter the proxy URL's below",
       "image-upload-directory.name": "Character image upload directory",
       "image-upload-directory.hint": "Specifies the image upload location on the server.",
+      "add-ddb-languages.name": "Add D&D Beyond languages?",
+      "add-ddb-languages.hint": "If unticked DDB languages will be added to the custom field",
       "other-image-upload-directory.name": "Other image upload directory",
       "other-image-upload-directory.hint": "Specifies the image upload location on the server.",
       "frame-image-upload-directory.name": "Image upload directory for frames",
@@ -83,8 +85,8 @@
         "hint": "Embed macros into items? If not selected, item macro will call DDB Importer to generate and run the appropriate macro on the fly. Advantages: don't need to remunch spells to get macro, less data stored in world. Disadvantages: harder to debug, need to be running DDB Importer."
       },
       "no-item-macros": {
-        "name": "Remove macros from items?",
-        "hint": "If selected will use the new functions from Midi and DAE (V11 only) to run macros on the items, supersedes embed macros option."
+        "name": "[Experimental] Remove macros from items?",
+        "hint": "If selected will call DDB Functions for Midi-QOL and DAE to run macros, supersedes embed macros option."
       },
       "show-image-to-players.name": "Show the show image to players button?",
       "show-image-to-players.hint": "In journals provide hover-over button to show image to players? (Reload required)",
@@ -97,7 +99,7 @@
         "dynamic-sync-policy-hitdice": "Hit Dice?",
         "dynamic-sync-policy-action-use": "Action usage?",
         "dynamic-sync-policy-inspiration": "Inspiration?",
-        "dynamic-sync-policy-condition": "Exhaustion?",
+        "dynamic-sync-policy-condition": "Conditions?",
         "dynamic-sync-policy-deathsaves": "Death Saves?",
         "dynamic-sync-policy-spells-prepared": "Spells Prepared?",
         "dynamic-sync-policy-spells-slots": "Spell Slots?",

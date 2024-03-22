@@ -1399,7 +1399,7 @@ class AdventureMunchHelpers {
           case "item":
             logger/* default.debug */.Z.debug(`Importing missing ${type}s from DDB`, docIds);
             AdventureMunch._progressNote(`Importing ${docIds.length} missing ${type}s from DDB`);
-            resolve((0,items/* parseItems */.S)(docIds));
+            resolve((0,items/* parseItems */.S)(docIds, false));
             break;
           case "monster": {
             try {
@@ -1428,7 +1428,7 @@ class AdventureMunchHelpers {
             logger/* default.debug */.Z.debug(`Importing missing ${type}s from DDB`);
             AdventureMunch._progressNote(`Missing spells detected, importing from DDB`);
             // we actually want all spells, because monsters don't just use spells from a single source
-            resolve((0,spells/* parseSpells */.Z)());
+            resolve((0,spells/* parseSpells */.Z)(null, false));
             break;
           // no default
         }
@@ -2622,6 +2622,10 @@ class AdventureMunch extends FormApplication {
     if (data.background?.source) {
       // eslint-disable-next-line require-atomic-updates
       data.background.source = await this.importImage(data.background.source);
+    }
+    if (data.background?.src) {
+      // eslint-disable-next-line require-atomic-updates
+      data.background.src = await this.importImage(data.background.src);
     }
     if (data.thumb) {
       // eslint-disable-next-line require-atomic-updates
@@ -3949,63 +3953,87 @@ var DDBMacros = __webpack_require__(6516);
 var tools = __webpack_require__(8089);
 // EXTERNAL MODULE: ./src/parser/character/bio.js
 var bio = __webpack_require__(2331);
+// EXTERNAL MODULE: ./src/parser/features/DDBFeature.js
+var DDBFeature = __webpack_require__(4074);
 ;// CONCATENATED MODULE: ./src/muncher/backgrounds/backgrounds.js
 /* eslint-disable no-await-in-loop */
 
 
+// import { parseTags } from "../../lib/DDBTemplateStrings.js";
+
+// import { generateTable } from "../table.js";
 
 
 
+// const BACKGROUND_TEMPLATE = {
+//   "name": "",
+//   "type": "background",
+//   "system": {
+//     "description": {
+//       "value": "",
+//       "chat": "",
+//     },
+//     "type": {
+//       "value": "background",
+//     },
+//     "source": "",
+//   },
+//   "sort": 2600000,
+//   "flags": {
+//     "ddbimporter": {},
+//     "obsidian": {
+//       "source": {
+//         "type": "background"
+//       }
+//     },
+//   },
+//   "img": "icons/skills/trades/academics-book-study-purple.webp",
+// };
+
+// async function buildBase(data) {
+//   let result = duplicate(BACKGROUND_TEMPLATE);
+//   const bgData = generateBackground(data);
+//   result.name = data.name;
+//   result.system.description.value += `${bgData.description}\n\n`;
+
+//   result.flags.ddbimporter = {
+//     featId: data.id,
+//     version: CONFIG.DDBI.version,
+//   };
+
+//   result.system.source = DDBHelper.parseSource(data);
+//   result.system.description.value = parseTags(result.system.description.value);
+//   result.system.description.value = await generateTable(result.name, result.system.description.value, true, "background");
+
+//   return result;
+// }
 
 
-const BACKGROUND_TEMPLATE = {
-  "name": "",
-  "type": "background",
-  "system": {
-    "description": {
-      "value": "",
-      "chat": "",
-    },
-    "type": {
-      "value": "background",
-    },
-    "source": "",
-  },
-  "sort": 2600000,
-  "flags": {
-    "ddbimporter": {},
-    "obsidian": {
-      "source": {
-        "type": "background"
-      }
-    },
-  },
-  "img": "icons/skills/trades/academics-book-study-purple.webp",
-};
+async function buildBackground(backgroundData) {
+  let featDefinition = (0,bio/* generateBackground */.E)(backgroundData);
 
-async function backgrounds_buildBase(data) {
-  let result = duplicate(BACKGROUND_TEMPLATE);
-  const bgData = (0,bio/* generateBackground */.E)(data);
-  result.name = data.name;
-  result.system.description.value += `${bgData.description}\n\n`;
+  const source = DDBHelper/* default.parseSource */.Z.parseSource(featDefinition);
+  const ddbFeature = new DDBFeature/* default */.Z({
+    ddbData: null,
+    ddbDefinition: featDefinition,
+    rawCharacter: null,
+    type: "background",
+    source,
+    noMods: true,
+  });
 
-  result.flags.ddbimporter = {
-    featId: data.id,
-    version: CONFIG.DDBI.version,
-  };
+  ddbFeature.build();
+  logger/* default.debug */.Z.debug(`DDBFeatures.getFeaturesFromDefinition: ${ddbFeature.ddbDefinition.name}`, {
+    ddbFeature,
+    featDefinition,
+  });
 
-  result.system.source = DDBHelper/* default.parseSource */.Z.parseSource(data);
-  result.system.description.value = (0,DDBTemplateStrings/* parseTags */.RN)(result.system.description.value);
-  result.system.description.value = await (0,table/* generateTable */.p)(result.name, result.system.description.value, true, "background");
+  await ddbFeature.generateAdvancements();
+  const featIds = getProperty(backgroundData, "featList.featIds") ?? [];
+  await ddbFeature.buildBackgroundFeatAdvancements(featIds);
 
-  return result;
-}
+  return ddbFeature.data;
 
-
-async function buildBackground(background) {
-  let result = await backgrounds_buildBase(background);
-
-  return result;
 }
 
 
@@ -5008,6 +5036,7 @@ const DICTIONARY = {
     ],
     proficiencies: [
       // Armor
+      { name: "All armor", type: "Armor", subType: null, foundryValue: "all", advancement: "" },
       { name: "Light Armor", type: "Armor", subType: "Light Armor", foundryValue: "lgt", advancement: "" },
       { name: "Medium Armor", type: "Armor", subType: "Medium Armor", foundryValue: "med", advancement: "" },
       { name: "Heavy Armor", type: "Armor", subType: "Heavy Armor", foundryValue: "hvy", advancement: "" },
@@ -5476,6 +5505,7 @@ const DICTIONARY = {
       "Poison",
       "Wand",
       "Rod",
+      "Wondrous item",
     ],
     LOOT: [
       "Gemstone",
@@ -5986,6 +6016,169 @@ class DDBEffectHelper {
   }
 
   /**
+   * This is a simple reworking of midi-qols measureDistances function, for use where midi-qol is not available
+   * Measure distances for given segments with optional grid spaces.
+   *
+   * @param {Array} segments - Array of segments to measure distances for
+   * @param {Object} options - Optional object with grid spaces configuration
+   * @return {Array} Array of distances for each segment
+   */
+  static simpleMeasureDistances(segments, options = {}) {
+    if (canvas?.grid?.grid.constructor.name !== "BaseGrid" || !options.gridSpaces) {
+      const distances = canvas?.grid?.measureDistances(segments, options);
+      return distances;
+    }
+
+    const rule = canvas?.grid.diagonalRule;
+    if (!options.gridSpaces || !["555", "5105", "EUCL"].includes(rule)) {
+      return canvas?.grid?.measureDistances(segments, options);
+    }
+    // Track the total number of diagonals
+    let nDiagonal = 0;
+    const d = canvas?.dimensions;
+
+    const grid = canvas?.scene?.grid;
+    if (!d || !d.size) return 0;
+
+    // Iterate over measured segments
+    return segments.map((s) => {
+      const r = s.ray;
+      // Determine the total distance traveled
+      const nx = Math.ceil(Math.max(0, Math.abs(r.dx / d.size)));
+      const ny = Math.ceil(Math.max(0, Math.abs(r.dy / d.size)));
+      // Determine the number of straight and diagonal moves
+      const nd = Math.min(nx, ny);
+      const ns = Math.abs(ny - nx);
+      nDiagonal += nd;
+
+      if (rule === "5105") { // Alternative DMG Movement
+        const nd10 = Math.floor(nDiagonal / 2) - Math.floor((nDiagonal - nd) / 2);
+        const spaces = (nd10 * 2) + (nd - nd10) + ns;
+        return spaces * d.distance;
+      } else if (rule === "EUCL") { // Euclidean Measurement
+        const nx = Math.max(0, Math.abs(r.dx / d.size));
+        const ny = Math.max(0, Math.abs(r.dy / d.size));
+        return Math.ceil(Math.hypot(nx, ny) * grid?.distance);
+      } else { // Standard PHB Movement
+        return Math.max(nx, ny) * grid.distance;
+      }
+    });
+  }
+
+  /**
+   * Get the distance segments between two objects.
+   *
+   * @param {Object} t1 - the first token
+   * @param {Object} t2 - the second token
+   * @param {boolean} wallBlocking - whether to consider walls as blocking
+   * @return {Array} an array of segments representing the distance between the two objects
+   */
+  static _getDistanceSegments(t1, t2, wallBlocking = false) {
+    const t1StartX = t1.document.width >= 1 ? 0.5 : t1.document.width / 2;
+    const t1StartY = t1.document.height >= 1 ? 0.5 : t1.document.height / 2;
+    const t2StartX = t2.document.width >= 1 ? 0.5 : t2.document.width / 2;
+    const t2StartY = t2.document.height >= 1 ? 0.5 : t2.document.height / 2;
+    let x, x1, y, y1;
+    let segments = [];
+    for (x = t1StartX; x < t1.document.width; x++) {
+      for (y = t1StartY; y < t1.document.height; y++) {
+        const origin = new PIXI.Point(...canvas.grid.getCenter(Math.round(t1.document.x + (canvas.dimensions.size * x)), Math.round(t1.document.y + (canvas.dimensions.size * y))));
+        for (x1 = t2StartX; x1 < t2.document.width; x1++) {
+          for (y1 = t2StartY; y1 < t2.document.height; y1++) {
+            const dest = new PIXI.Point(...canvas.grid.getCenter(Math.round(t2.document.x + (canvas.dimensions.size * x1)), Math.round(t2.document.y + (canvas.dimensions.size * y1))));
+            const r = new Ray(origin, dest);
+            // eslint-disable-next-line max-depth
+            if (wallBlocking) {
+              const collisionCheck = CONFIG.Canvas.polygonBackends.move.testCollision(origin, dest, { mode: "any", type: "move" });
+              // eslint-disable-next-line max-depth, no-continue
+              if (collisionCheck) continue;
+            }
+            segments.push({ ray: r });
+          }
+        }
+      }
+    }
+    return segments;
+  }
+
+  /**
+   * Calculate the height difference between two tokens based on their elevation and dimensions.
+   *
+   * @param {type} t1 - description of parameter t1
+   * @param {type} t2 - description of parameter t2
+   * @return {type} the height difference between the two tokens
+   */
+  static _calculateTokeHeightDifference(t1, t2) {
+    const t1Elevation = t1.document.elevation ?? 0;
+    const t2Elevation = t2.document.elevation ?? 0;
+    const t1TopElevation = t1Elevation + (Math.max(t1.document.height, t1.document.width) * (canvas?.dimensions?.distance ?? 5));
+    const t2TopElevation = t2Elevation + (Math.min(t2.document.height, t2.document.width) * (canvas?.dimensions?.distance ?? 5));
+
+    let heightDifference = 0;
+    let t1ElevationRange = Math.max(t1.document.height, t1.document.width) * (canvas?.dimensions?.distance ?? 5);
+    if (Math.abs(t2Elevation - t1Elevation) < t1ElevationRange) {
+      // token 2 is within t1's size so height difference is functionally 0
+      heightDifference = 0;
+    } else if (t1Elevation < t2Elevation) { // t2 above t1
+      heightDifference = t2Elevation - t1TopElevation;
+    } else if (t1Elevation > t2Elevation) { // t1 above t2
+      heightDifference = t1Elevation - t2TopElevation;
+    }
+
+    return heightDifference;
+
+  }
+
+  /**
+   * This is a simple reworking of midi-qols get distance function, for use where midi-qol is not available
+   * Calculate the distance between two tokens on the canvas, considering the presence of walls.
+   *
+   * @param {string} token1 - The ID of the first token
+   * @param {string} token2 - The ID of the second token
+   * @param {boolean} wallBlocking - Whether to consider walls as obstacles (default is false)
+   * @return {number} The calculated distance between the two tokens
+   */
+  static getSimpleDistance(token1, token2, wallBlocking = false) {
+    if (!canvas || !canvas.scene) return -1;
+    if (!canvas.grid || !canvas.dimensions) return -1;
+    const t1 = DDBEffectHelper.getToken(token1);
+    const t2 = DDBEffectHelper.getToken(token2);
+    if (!t1 || !t2) return -1;
+    if (!canvas || !canvas.grid || !canvas.dimensions) return -1;
+
+    const segments = DDBEffectHelper._getDistanceSegments(t1, t2, wallBlocking);
+    if (segments.length === 0) return -1;
+
+    const rayDistances = segments.map((ray) => DDBEffectHelper.simpleMeasureDistances([ray], { gridSpaces: true }));
+    let distance = Math.min(...rayDistances);
+
+    const heightDifference = DDBEffectHelper._calculateTokeHeightDifference(t1, t2);
+
+    const distanceRule = canvas.grid.diagonalRule;
+    // 5105 Alternative DMG Movement
+    // 555 Standard Movement
+    // EUCL Euclidean Measurement
+    if (["555", "5105"].includes(distanceRule)) {
+      let nd = Math.min(distance, heightDifference);
+      let ns = Math.abs(distance - heightDifference);
+      distance = nd + ns;
+      let dimension = canvas?.dimensions?.distance ?? 5;
+      if (distanceRule === "5105") distance += Math.floor(nd / 2 / dimension) * dimension;
+    }
+    distance = Math.sqrt((heightDifference * heightDifference) + (distance * distance));
+
+    return distance;
+  }
+
+  static getDistance(token1, token2, wallsBlocking = false) {
+    if (game.modules.get("midi-qol")?.active) {
+      return MidiQOL.computeDistance(token1, token2, wallsBlocking);
+    } else {
+      return DDBEffectHelper.getSimpleDistance(token1, token2, wallsBlocking);
+    }
+  }
+
+  /**
    * Returns the highest ability of an actor based on the given abilities.
    *
    * @param {Object} actor - The actor object.
@@ -6138,7 +6331,7 @@ class DDBEffectHelper {
 
     const sourceToken = canvas.tokens?.get(macroData.tokenId);
     const targetToken = macroData.hitTargets[0].object;
-    const distance = MidiQOL.getDistance(sourceToken, targetToken, true, true);
+    const distance = MidiQOL.computeDistance(sourceToken, targetToken, true);
     const meleeDistance = 5; // Would it be possible to have creatures with reach and thrown weapon?
     return distance >= 0 && distance > meleeDistance;
   }
@@ -6446,12 +6639,15 @@ return game.modules.get("ddb-importer")?.api.macros.executeMacro("${type}", "${f
   static generateMacroChange({ macroValues = "", macroType = null, macroName = null, keyPostfix = "", priority = 20 } = {}) {
     const useDDBFunctions = game.settings.get("ddb-importer", "no-item-macros");
     const macroKey = (useDDBFunctions)
-      ? `macro.execute.function.DDBImporter.lib.DDBMacros.macroFunction.${macroType}("${macroName}")`
+      ? `macro.execute`
       : "macro.itemMacro";
+    const macroValuePrefix = (useDDBFunctions)
+      ? `function.DDBImporter.lib.DDBMacros.macroFunction.${macroType}("${macroName}") `
+      : "";
 
     return {
       key: `${macroKey}${keyPostfix}`,
-      value: macroValues,
+      value: `${macroValuePrefix}${macroValues}`,
       mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
       priority: priority,
     };
@@ -6460,7 +6656,9 @@ return game.modules.get("ddb-importer")?.api.macros.executeMacro("${type}", "${f
   static generateMidiOnUseMacroFlagValue(macroType, macroName, triggerPoints = [], macroUuid = null) {
     const useDDBFunctions = game.settings.get("ddb-importer", "no-item-macros");
     const docMacroName = (macroUuid && !useDDBFunctions) ? `.${macroUuid}` : "";
-    const valueContent = (useDDBFunctions) ? `function.DDBImporter.lib.DDBMacros.macroFunction.${macroType}("${macroName}")` : `ItemMacro${docMacroName}`;
+    const valueContent = (useDDBFunctions)
+      ? `function.DDBImporter.lib.DDBMacros.macroFunction.${macroType}("${macroName}")`
+      : `ItemMacro${docMacroName}`;
     return triggerPoints.map((t) => `[${t}]${valueContent}`).join(",");
   }
 
@@ -6665,6 +6863,10 @@ function buildBaseACEffect(label) {
   return effect;
 }
 
+// function maxACWrapper(formula) {
+//   return `max(${formula}, @attributes.ac.armor + @attributes.ac.dex)`;
+// }
+
 /**
  *
  * Generate an effect given inputs for AC
@@ -6724,7 +6926,8 @@ function addACSetEffect(modifiers, name, subType) {
   const maxDexTypes = ["ac-max-dex-unarmored-modifier", "ac-max-dex-modifier"];
 
   if (bonuses && bonuses != 0) {
-    let effectString = "";
+    const bonusSum = Number.isInteger(bonuses) ? 10 + bonuses : `10 + ${bonuses}`;
+    let formula = "";
     switch (subType) {
       case "unarmored-armor-class": {
         let maxDexMod = 99;
@@ -6734,24 +6937,24 @@ function addACSetEffect(modifiers, name, subType) {
           .map((mod) => mod.value);
         if (maxDexArray.length > 0) maxDexMod = Math.min(maxDexArray);
         if (ignoreDexMod) {
-          effectString = `10 + ${bonuses}`;
+          formula = `${bonusSum}`;
         } else if (maxDexMod === 99) {
-          effectString = `10 + ${bonuses} + @abilities.dex.mod`;
+          formula = `${bonusSum} + @abilities.dex.mod`;
         } else {
-          effectString = `@abilities.dex.mod > ${maxDexMod} ? 10 + ${bonuses} + ${maxDexMod} : 10 + ${bonuses} + @abilities.dex.mod`;
+          formula = `@abilities.dex.mod > ${maxDexMod} ? ${bonusSum} + ${maxDexMod} : ${bonusSum} + @abilities.dex.mod`;
         }
         break;
       }
       default: {
-        effectString = `10 + ${bonuses} + @abilities.dex.mod`;
+        formula = `${bonusSum} + @abilities.dex.mod`;
       }
     }
 
-    _logger_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].debug */ .Z.debug(`Generating ${subType} AC set for ${name}: ${effectString}`);
+    _logger_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].debug */ .Z.debug(`Generating ${subType} AC set for ${name}: ${formula}`);
     effects.push(
       {
         key: "system.attributes.ac.formula",
-        value: effectString,
+        value: formula,
         mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
         priority: 15,
       },
@@ -7495,8 +7698,8 @@ function infusionEffectAdjustment(document) {
 
 // EXTERNAL MODULE: ./src/effects/acEffects.js
 var acEffects = __webpack_require__(2877);
-// EXTERNAL MODULE: ./src/parser/DDBCharacter.js + 12 modules
-var DDBCharacter = __webpack_require__(5992);
+// EXTERNAL MODULE: ./src/parser/DDBCharacter.js + 8 modules
+var DDBCharacter = __webpack_require__(737);
 ;// CONCATENATED MODULE: ./src/effects/effects.js
 
 
@@ -7916,7 +8119,13 @@ function generateStatusEffectChange(statusName, priority = 20) {
 }
 
 function addStatusEffectChange(effect, statusName, priority = 20, macro = false, level = null) {
-  if (effectModules.convenientEffectsInstalled && effectModules.midiQolInstalled) {
+  if (effectModules().convenientEffectsInstalled && effectModules().midiQolInstalled) {
+    const key = generateCEStatusEffectChange(statusName, priority, macro);
+    effect.changes.push(key);
+  } else if (effectModules().convenientEffectsInstalled) {
+    const key = generateCEStatusEffectChange(statusName, priority, macro);
+    effect.changes.push(key);
+  } else if (effectModules().daeInstalled) {
     const key = generateStatusEffectChange(statusName, priority, macro);
     effect.changes.push(key);
   } else {
@@ -9144,7 +9353,7 @@ async function maskOfTheWildEffect(document) {
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "k": () => (/* binding */ recklessAttackEffect)
 /* harmony export */ });
-/* harmony import */ var _specialFeats_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5470);
+/* harmony import */ var _specialFeats_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3747);
 
 
 function recklessAttackEffect(document, allMWAK = false) {
@@ -9209,7 +9418,7 @@ function recklessAttackEffect(document, allMWAK = false) {
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Q": () => (/* binding */ uncannyDodgeEffect)
 /* harmony export */ });
-/* harmony import */ var _specialFeats_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5470);
+/* harmony import */ var _specialFeats_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3747);
 
 
 function uncannyDodgeEffect(document) {
@@ -9239,7 +9448,8 @@ function uncannyDodgeEffect(document) {
 /* harmony export */   "FI": () => (/* binding */ generateOverTimeEffect),
 /* harmony export */   "LB": () => (/* binding */ damageOverTimeEffect),
 /* harmony export */   "XP": () => (/* binding */ getOvertimeDamage),
-/* harmony export */   "Z1": () => (/* binding */ getMonsterFeatureDamage)
+/* harmony export */   "Z1": () => (/* binding */ getMonsterFeatureDamage),
+/* harmony export */   "pD": () => (/* binding */ generateConditionOnlyEffect)
 /* harmony export */ });
 /* harmony import */ var _specialMonsters_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3602);
 /* harmony import */ var _lib_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(7669);
@@ -9349,7 +9559,7 @@ function getSpecialDuration (effect, match) {
   return effect;
 }
 
-function generateConditionEffect(effect, text) {
+function generateConditionEffect(effect, text, nameHint = null) {
   let results = {
     success: false,
     effect,
@@ -9374,9 +9584,12 @@ function generateConditionEffect(effect, text) {
       results.condition = group4Condition.value;
       (0,_effects_js__WEBPACK_IMPORTED_MODULE_3__/* .addStatusEffectChange */ .sb)(results.effect, group4Condition.name, 20, true);
       effect = getSpecialDuration(results.effect, match);
+      if (nameHint) results.effect.name = `${nameHint}: ${group4Condition.name}`;
     } else if (match[3] && match[3] === "die") {
       (0,_effects_js__WEBPACK_IMPORTED_MODULE_3__/* .addStatusEffectChange */ .sb)(results.effect, "Dead", 20, true);
+      if (nameHint) results.effect.name = `Condition: Dead`;
     }
+
   }
   return results;
 }
@@ -9411,7 +9624,7 @@ function getOvertimeDamage(text) {
 }
 
 function effectCleanup(document, actor, effect) {
-  if (effect.changes.length > 0) {
+  if (effect.changes.length > 0 || effect.statuses.length > 0) {
     document.effects.push(effect);
     let overTimeFlags = hasProperty(actor, "flags.monsterMunch.overTime") ? getProperty(actor, "flags.monsterMunch.overTime") : [];
     overTimeFlags.push(document.name);
@@ -9423,13 +9636,32 @@ function effectCleanup(document, actor, effect) {
         value: effect.duration.rounds,
       });
     }
-    _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].debug */ .Z.debug(`Generating damage over time effect for ${actor.name}, ${actor.name}`);
+    _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].debug */ .Z.debug(`Cleanup of over time effect for ${actor.name}, ${actor.name} for ${document.name}`, effect);
   }
   return { document, actor };
 }
 
+function generateConditionOnlyEffect(actor, document) {
+  _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].debug */ .Z.debug(`Checking for condition effects for ${document.name} on ${actor.name}`);
+  if (!document.effects) document.effects = [];
+  let effect = (0,_specialMonsters_js__WEBPACK_IMPORTED_MODULE_0__/* .baseMonsterFeatureEffect */ .Kh)(document, `${document.name}`);
+  // add any condition effects
+  const conditionResults = generateConditionEffect(effect, document.system.description.value, document.name);
+  effect = conditionResults.effect;
+
+  const durationSeconds = hasProperty(document.flags, "monsterMunch.overTime.durationSeconds")
+    ? getProperty(document.flags, "monsterMunch.overTime.durationSeconds")
+    : getDuration(document.system.description.value);
+  setProperty(effect, "duration.seconds", durationSeconds);
+  const durationRounds = Number.parseInt(durationSeconds / 6);
+  setProperty(effect, "duration.rounds", durationRounds);
+
+  const result = effectCleanup(document, actor, effect);
+  return result;
+}
+
 function generateOverTimeEffect(actor, document) {
-  _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].debug */ .Z.debug("Generating damage over time effect for", document.name);
+  _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].debug */ .Z.debug(`Checking for over time effects for ${document.name} on ${actor.name}`);
   if (!document.effects) document.effects = [];
   let effect = (0,_specialMonsters_js__WEBPACK_IMPORTED_MODULE_0__/* .baseMonsterFeatureEffect */ .Kh)(document, `${document.name}`);
   // add any condition effects
@@ -9448,7 +9680,10 @@ function generateOverTimeEffect(actor, document) {
   setProperty(effect, "duration.rounds", durationRounds);
 
   const turn = startOrEnd(document.system.description.value);
-  if (!turn) return effectCleanup(document, actor, effect);
+  if (!turn) {
+    _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].debug */ .Z.debug(`No turn over time effect for ${document.name} on ${actor.name}`);
+    return effectCleanup(document, actor, effect);
+  }
 
   const saveFeature = new _parser_monster_features_DDBMonsterFeature_js__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .Z("overTimeSaveFeature", { html: document.system.description.value });
   saveFeature.prepare();
@@ -9459,8 +9694,10 @@ function generateOverTimeEffect(actor, document) {
   const dc = save.dc;
 
   const dmg = getOvertimeDamage(document.system.description.value);
-
-  if (!dmg) return effectCleanup(document, actor, effect);
+  if (!dmg) {
+    _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].debug */ .Z.debug(`Adding non damage Overtime effect for ${document.name} on ${actor.name}`);
+    return effectCleanup(document, actor, effect);
+  }
 
   // overtime damage, revert any full damage flag, reset to default on save
   setProperty(document, "flags.midiProperties.fulldam", false);
@@ -9484,10 +9721,11 @@ function generateOverTimeEffect(actor, document) {
     ? getProperty(document.flags, "monsterMunch.overTime.saveDamage")
     : "nodamage";
 
+  _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].debug */ .Z.debug(`generateOverTimeEffect: Generated over time effect for ${actor.name}, ${document.name}`);
   effect.changes.push(overTimeDamage({ document, turn, damage, damageType, saveAbility, saveRemove, saveDamage, dc }));
-  document.effects.push(effect);
 
-  return effectCleanup(document, actor, effect);
+  const result = effectCleanup(document, actor, effect);
+  return result;
 }
 
 
@@ -9497,9 +9735,11 @@ function damageOverTimeEffect({ document, startTurn = false, endTurn = false, du
   if (!startTurn && !endTurn) return document;
 
   if (startTurn) {
+    _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].debug */ .Z.debug(`damageOverTimeEffect: Generating damage over time effect START for ${document.name}`);
     effect.changes.push(overTimeDamage({ document, turn: "start", damage, damageType, saveAbility, saveRemove, saveDamage, dc }));
   }
   if (endTurn) {
+    _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].debug */ .Z.debug(`damageOverTimeEffect: Generating damage over time effect END for ${document.name}`);
     effect.changes.push(overTimeDamage({ document, turn: "end", damage, damageType, saveAbility, saveRemove, saveDamage, dc }));
   }
 
@@ -9821,7 +10061,7 @@ function equipmentEffectAdjustment(document) {
 
 /***/ }),
 
-/***/ 5470:
+/***/ 3747:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 
@@ -10154,7 +10394,7 @@ async function crusherCriticalEffect(document) {
   effect.changes.push(
     {
       key: "flags.dnd5e.DamageBonusMacro",
-      value: "ItemMacro",
+      value: DDBMacros/* default.generateItemMacroValue */.Z.generateItemMacroValue({ macroType: "feat", macroName: "crusherCritical.js", document }),
       mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
       priority: 20,
     },
@@ -10177,7 +10417,7 @@ async function crusherEffect(document) {
   effect.changes.push(
     {
       key: "flags.dnd5e.DamageBonusMacro",
-      value: "ItemMacro",
+      value: DDBMacros/* default.generateItemMacroValue */.Z.generateItemMacroValue({ macroType: "feat", macroName: "crusher.js", document }),
       mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
       priority: 20,
     },
@@ -10205,11 +10445,16 @@ function dauntingRoarEffect(document) {
   effect.duration.turns = 2;
 
   document.effects.push(effect);
-  document.system.range = { value: null, units: "spec", long: null };
-  document.system.target = { value: 10, width: null, units: "ft", type: "enemy" };
-  document.system.activation.condition = "!target.effects.some((e) => e.name.toLowerCase().includes('deafened'))";
+  // document.system.range = { value: null, units: "spec", long: null };
+  // document.system.target = { value: 10, width: null, units: "ft", type: "enemy" };
+  // document.system.activation.condition = "!target.effects.some((e) => e.name.toLowerCase().includes('deafened'))";
 
   setProperty(document.flags, "midi-qol.effectActivation", true);
+
+  setProperty(document, "flags.midi-qol.itemCondition", "");
+  setProperty(document, "flags.midi-qol.effectCondition", "!target.effects.some((e) => e.name.toLowerCase().includes('deafened'))");
+  setProperty(document, "flags.midi-qol.AoETargetType", "enemy");
+  setProperty(document, "flags.midi-qol.AoETargetTypeIncludeSelf", false);
 
   return document;
 }
@@ -10371,7 +10616,7 @@ async function favoredFoeEffect(document) {
   let damageBonusEffect = baseFeatEffect(document, document.name, { transfer: true });
   damageBonusEffect.changes.push({
     key: "flags.dnd5e.DamageBonusMacro",
-    value: "ItemMacro",
+    value: DDBMacros/* default.generateItemMacroValue */.Z.generateItemMacroValue({ macroType: "feat", macroName: "favoredFoe.js", document }),
     mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
     priority: 20,
   });
@@ -10671,11 +10916,11 @@ function hadozeDodgeEffect(document) {
 
 function heavyArmorMasterEffect(document) {
   let effect = baseFeatEffect(document, `${document.name}`, { transfer: true });
-  if (effects/* effectModules.midiQolInstalled */.xV.midiQolInstalled) {
+  if ((0,effects/* effectModules */.xV)().midiQolInstalled) {
     effect.changes.push(
       {
         key: "flags.midi-qol.DR.non-magical",
-        mode: CONST.ACTIVE_EFFECT_MODES.ADD,
+        mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
         value: "3",
         priority: "20",
       },
@@ -10683,9 +10928,21 @@ function heavyArmorMasterEffect(document) {
   } else {
     effect.changes.push(
       {
-        key: "system.traits.dm",
+        key: "system.traits.dm.amount.bludgeoning",
         mode: CONST.ACTIVE_EFFECT_MODES.ADD,
-        value: "3",
+        value: "-3",
+        priority: "20",
+      },
+      {
+        key: "system.traits.dm.amount.slashing",
+        mode: CONST.ACTIVE_EFFECT_MODES.ADD,
+        value: "-3",
+        priority: "20",
+      },
+      {
+        key: "system.traits.dm.amount.piercing",
+        mode: CONST.ACTIVE_EFFECT_MODES.ADD,
+        value: "-3",
         priority: "20",
       },
     );
@@ -11272,7 +11529,7 @@ async function piercerCriticalEffect(document) {
   effect.changes.push(
     {
       key: "flags.dnd5e.DamageBonusMacro",
-      value: "ItemMacro",
+      value: DDBMacros/* default.generateItemMacroValue */.Z.generateItemMacroValue({ macroType: "feat", macroName: "piercer.js", document }),
       mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
       priority: 20,
     },
@@ -11410,7 +11667,7 @@ async function radiantSoulEffect(document) {
     effect.changes.push(
       {
         key: "flags.dnd5e.DamageBonusMacro",
-        value: `ItemMacro.${document.name}`,
+        value: DDBMacros/* default.generateItemMacroValue */.Z.generateItemMacroValue({ macroType: "feat", macroName: "radiantSoul.js", document }),
         mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
         priority: "20",
       },
@@ -11746,14 +12003,8 @@ function sharpShooterEffect(document) {
   document.system.range = { value: null, units: "self", long: null };
   document.system.actionType = "other";
 
-  const midiFlags = {
-    "effectActivation": false,
-    // "forceCEOff": false,
-    // "forceCEOn": true,
-    "removeAttackDamageButtons": "default",
-  };
-
-  setProperty(document, "flags.midi-qol", midiFlags);
+  setProperty(document, "flags.midi-qol.effectActivation", false);
+  setProperty(document, "flags.midi-qol.removeAttackDamageButtons", false);
   setProperty(document, "flags.midiProperties.toggleEffect", true);
 
   return document;
@@ -11834,7 +12085,7 @@ async function slasherCriticalEffect(document) {
   effect.changes.push(
     {
       key: "flags.dnd5e.DamageBonusMacro",
-      value: "ItemMacro",
+      value: DDBMacros/* default.generateItemMacroValue */.Z.generateItemMacroValue({ macroType: "feat", macroName: "slasherCritical.js", document }),
       mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
       priority: 20,
     },
@@ -11856,7 +12107,7 @@ async function slasherReduceSpeedEffect(document) {
   effect.changes.push(
     {
       key: "flags.dnd5e.DamageBonusMacro",
-      value: "ItemMacro",
+      value: DDBMacros/* default.generateItemMacroValue */.Z.generateItemMacroValue({ macroType: "feat", macroName: "slasherReduceSpeed.js", document }),
       mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
       priority: 20,
     },
@@ -11889,7 +12140,7 @@ async function slayersPreyEffect(document) {
   let damageBonusEffect = baseFeatEffect(document, document.name, { transfer: true });
   damageBonusEffect.changes.push({
     key: "flags.dnd5e.DamageBonusMacro",
-    value: "ItemMacro",
+    value: DDBMacros/* default.generateItemMacroValue */.Z.generateItemMacroValue({ macroType: "feat", macroName: "slayersPrey.js", document }),
     mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
     priority: 20,
   });
@@ -11938,7 +12189,7 @@ async function squireOfSolamniaEffect(document) {
     },
     {
       key: "flags.dnd5e.DamageBonusMacro",
-      value: "ItemMacro",
+      value: DDBMacros/* default.generateItemMacroValue */.Z.generateItemMacroValue({ macroType: "feat", macroName: "squireOfSolamnia.js", document }),
       mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
       priority: 20,
     }
@@ -12311,7 +12562,8 @@ function intimidatingPresenceEffect(document) {
   effect.duration.turns = 2;
   document.effects.push(effect);
 
-  document.system.activation.condition = "!target.effects.some((e)=> e.name?.toLowerCase().includes('blind') || e.name?.toLowerCase().includes('deaf'))";
+  // document.system.activation.condition = "!target.effects.some((e)=> e.name?.toLowerCase().includes('blind') || e.name?.toLowerCase().includes('deaf'))";
+  setProperty(document, "flags.midi-qol.effectCondition", "!target.effects.some((e)=> e.name?.toLowerCase().includes('blind') || e.name?.toLowerCase().includes('deaf'))");
   setProperty(document.flags, "midi-qol.effectActivation", true);
   document.system.duration.units = "perm";
 
@@ -12581,16 +12833,60 @@ function greatWeaponMasterEffect(document) {
   document.system.range = { value: null, units: "self", long: null };
   document.system.actionType = "other";
 
-  const midiFlags = {
-    "effectActivation": false,
-    // "forceCEOff": false,
-    // "forceCEOn": true,
-    "removeAttackDamageButtons": "default",
-  };
-
-  setProperty(document, "flags.midi-qol", midiFlags);
+  setProperty(document, "flags.midi-qol.effectActivation", false);
+  setProperty(document, "flags.midi-qol.removeAttackDamageButtons", false);
   setProperty(document, "flags.midiProperties.toggleEffect", true);
 
+  return document;
+}
+
+;// CONCATENATED MODULE: ./src/effects/feats/psychicBlades.js
+function psychicBladesEffect(document) {
+
+  // document.system.actionType = "rwak";
+  // setProperty(document, "flags.midi-qol.effectCondition", "");
+  // setProperty(document, "flags.midi-qol.ignoreNearbyFoes", true);
+
+  return document;
+}
+
+;// CONCATENATED MODULE: ./src/effects/feats/sneakAttack.js
+
+
+
+
+
+async function sneakAttackEffect(document) {
+  const effect = baseFeatEffect(document, document.name, { transfer: true });
+  await DDBMacros/* default.setItemMacroFlag */.Z.setItemMacroFlag(document, "feat", "sneakAttack.js");
+  effect.changes.push(
+    {
+      key: "flags.dnd5e.DamageBonusMacro",
+      value: DDBMacros/* default.generateItemMacroValue */.Z.generateItemMacroValue({ macroType: "feat", macroName: "sneakAttack.js", document }),
+      mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
+      priority: 20,
+    },
+  );
+  document.effects.push(effect);
+  document.system.damage.parts = [];
+  document.system.actionType = null;
+
+  document.system.duration = {
+    value: 24,
+    units: "hours",
+  };
+
+  document.system.target = {
+    value: null,
+    width: null,
+    units: "",
+    type: "self",
+  };
+  document.system.range = {
+    value: null,
+    long: null,
+    units: "self",
+  };
   return document;
 }
 
@@ -12676,10 +12972,306 @@ function greatWeaponMasterEffect(document) {
 
 
 
+
+
 function baseFeatEffect(document, label,
   { transfer = false, disabled = false } = {}
 ) {
   return (0,effects/* baseEffect */.mS)(document, label, { transfer, disabled });
+}
+
+// eslint-disable-next-line complexity
+async function midiFeatureEffects(ddb, character, document) {
+  const name = document.flags.ddbimporter?.originalName ?? document.name;
+
+  document = (0,effects/* applyDefaultMidiFlags */.VN)(document);
+
+  if (name.startsWith("Maneuvers: ") && ddb && character) {
+    document = await maneuversEffect(ddb, character, document);
+    return document;
+  } else if (name.startsWith("Rune Carver: ")) {
+    document = await runeCarverEffect(document);
+    return document;
+  }
+
+  switch (name) {
+    case "Arcane Recovery": {
+      document = await arcaneRecoveryEffect(document);
+      break;
+    }
+    case "Ancestral Protectors": {
+      document = await ancestralProtectorsEffect(document);
+      break;
+    }
+    case "Arcane Ward": {
+      document = await arcaneWardEffect(document);
+      break;
+    }
+    case "Bladesong": {
+      document = bladesongEffect(document);
+      break;
+    }
+    case "Bardic Inspiration": {
+      document = bardicInspirationEffect(document);
+      break;
+    }
+    case "Blessed Healer": {
+      document = await blessedHealerEffect(document);
+      break;
+    }
+    case "Blessed Strikes": {
+      document = blessedStrikesEffect(document);
+      break;
+    }
+    case "Convert Sorcery Points":
+    case "Font of Magic": {
+      document = await fontOfMagicEffect(document);
+      break;
+    }
+    case "Crusher": {
+      document = await crusherEffect(document);
+      break;
+    }
+    case "Crusher: Critical": {
+      document = await crusherCriticalEffect(document);
+      break;
+    }
+    case "Cloud Rune": {
+      document = cloudRuneEffect(document);
+      break;
+    }
+    case "Crossbow Expert": {
+      document = crossbowExpertEffect(document);
+      break;
+    }
+    case "Daunting Roar": {
+      document = dauntingRoarEffect(document);
+      break;
+    }
+    case "Deflect Missiles": {
+      document = deflectMissilesEffect(document);
+      break;
+    }
+    case "Deflect Missiles Attack": {
+      document = deflectMissilesAttackEffect(document);
+      break;
+    }
+    case "Deft Strike": {
+      document = await deftStrikeEffect(document);
+      break;
+    }
+    case "Evasion": {
+      document = evasionEffect(document);
+      break;
+    }
+    case "Empty Body":
+    case "Ki: Empty Body": {
+      document = kiEmptyBodyEffect(document);
+      break;
+    }
+    case "Favored Foe": {
+      document = await favoredFoeEffect(document);
+      break;
+    }
+    case "Fighting Style: Interception": {
+      document = fightingStyleInterceptionEffect(document);
+      break;
+    }
+    case "Fire Rune": {
+      document = fireRuneEffect(document);
+      break;
+    }
+    case "Form of the Beast: Tail (reaction)": {
+      document = formOfTheBeastReactionEffect(document);
+      break;
+    }
+    case "Fury of the Small": {
+      document = await furyOfTheSmallEffect(document);
+      break;
+    }
+    case "Giant's Might": {
+      document = giantsMightEffect(document);
+      break;
+    }
+    case "Glide (Reaction)": {
+      document = (0,effects/* forceManualReaction */.pi)(document);
+      break;
+    }
+    case "Hadozee Dodge": {
+      document = hadozeDodgeEffect(document);
+      break;
+    }
+    case "Indomitable": {
+      document = indomitableEffect(document);
+      break;
+    }
+    case "Intimidating Presence": {
+      document = intimidatingPresenceEffect(document);
+      break;
+    }
+    case "Mantle of Inspiration": {
+      document = await mantleOfInspirationEffect(document);
+      break;
+    }
+    case "Mask of the Wild": {
+      document = await (0,maskOfTheWild/* maskOfTheWildEffect */.L)(document);
+      break;
+    }
+    case "Patient Defense": {
+      document = patientDefenseEffect(document);
+      break;
+    }
+    case "Potent Cantrip": {
+      document = potentCantripEffect(document);
+      break;
+    }
+    case "Equine Build":
+    case "Little Giant":
+    case "Hippo Build":
+    case "Powerful Build": {
+      document = powerfulBuild(document);
+      break;
+    }
+    case "Piercer": {
+      document = await piercerCriticalEffect(document);
+      document = await piercerRerollEffect(document);
+      break;
+    }
+    case "Piercer: Reroll Damage": {
+      document = await piercerRerollEffect(document);
+      break;
+    }
+    case "Piercer: Critical Hit": {
+      document = await piercerCriticalEffect(document);
+      break;
+    }
+    case "Planar Warrior": {
+      document = await planarWarriorEffect(document);
+      break;
+    }
+    case "Psychic Blades: Attack (DEX)":
+    case "Psychic Blades: Attack (STR)":
+    case "Psychic Blades: Bonus Attack (DEX)":
+    case "Psychic Blades: Bonus Attack (STR)":
+    case "Psychic Blades: Bonus Attack":
+    case "Psychic Blades: Attack": {
+      document = psychicBladesEffect(document);
+      break;
+    }
+    case "Celestial Revelation (Radiant Soul)":
+    case "Radiant Soul": {
+      document = await radiantSoulEffect(document);
+      break;
+    }
+    case "Raging Storm: Sea": {
+      document = await ragingStormSeaEffect(document);
+      break;
+    }
+    case "Raging Storm: Tundra": {
+      document = await ragingStormTundraEffect(document);
+      break;
+    }
+    case "Reckless Attack": {
+      document = (0,recklessAttack/* recklessAttackEffect */.k)(document);
+      break;
+    }
+    case "Channel Divinity: Sacred Weapon":
+    case "Sacred Weapon": {
+      document = await sacredWeaponEffect(document);
+      break;
+    }
+    case "Sculpt Spells": {
+      document = sculptSpellsEffect(document);
+      break;
+    }
+    case "Sharpshooter": {
+      document = sharpShooterEffect(document);
+      break;
+    }
+    case "Savage Attacker": {
+      document = savageAttackerEffect(document);
+      break;
+    }
+    case "Shift": {
+      if (ddb && character) document = shiftEffect(ddb, character, document);
+      break;
+    }
+    case "Slasher: Reduce Speed": {
+      document = await slasherReduceSpeedEffect(document);
+      break;
+    }
+    case "Slasher: Critical Hit": {
+      document = await slasherCriticalEffect(document);
+      break;
+    }
+    case "Slayer's Prey": {
+      document = await slayersPreyEffect(document);
+      break;
+    }
+    case "Slow Fall": {
+      document = (0,effects/* forceManualReaction */.pi)(document);
+      break;
+    }
+    case "Squire of Solamnia: Precise Strike": {
+      document = await squireOfSolamniaEffect(document);
+      break;
+    }
+    case "Sneak Attack": {
+      document = await sneakAttackEffect(document);
+      break;
+    }
+    case "Steady Aim": {
+      document = steadyAimEffect(document);
+      break;
+    }
+    case "Stone Rune": {
+      document = stoneRuneEffect(document);
+      break;
+    }
+    case "Stone's Endurance":
+    case "Stone’s Endurance": {
+      document = stonesEnduranceEffect(document);
+      break;
+    }
+    case "Storm Aura: Tundra": {
+      document = await stormAuraTundraEffect(document);
+      break;
+    }
+    case "Storm Rune": {
+      document = stormRuneEffect(document);
+      break;
+    }
+    case "Storm Soul: Desert":
+    case "Storm Soul: Sea":
+    case "Storm Soul: Tundra":
+    case "Storm Soul": {
+      if (ddb) document = await stormSoulEffect(ddb, document);
+      break;
+    }
+    case "Swiftstride Reaction": {
+      document = (0,effects/* forceManualReaction */.pi)(document);
+      break;
+    }
+    case "Uncanny Dodge": {
+      document = (0,uncannyDodge/* uncannyDodgeEffect */.Q)(document);
+      break;
+    }
+    case "Vedalken Dispassion": {
+      document = vedalkenDispassionEffect(document);
+      break;
+    }
+    case "Visage of the Astral Self": {
+      document = visageOfTheAstralSelfEffect(document);
+      break;
+    }
+    case "War Caster":
+    case "Warcaster": {
+      document = warCasterEffect(document);
+      break;
+    }
+    // no default
+  }
+  return document;
 }
 
 /**
@@ -12710,8 +13302,17 @@ async function featureEffectAdjustment(ddb, character, document, midiEffects = f
       document = defensiveDuelistEffect(document);
       break;
     }
+    case "Demiurgic Colossus": {
+      document = demiurgicColossusEffect(document);
+      break;
+    }
     case "Frost Rune": {
       document = frostRuneEffect(document);
+      break;
+    }
+    case "Giant Stature":
+    case "Giant's Havoc: Giant Stature": {
+      document = giantStatureEffect(document);
       break;
     }
     case "Great Weapon Master": {
@@ -12737,6 +13338,10 @@ async function featureEffectAdjustment(ddb, character, document, midiEffects = f
     }
     case "Rage": {
       document = rageEffect(document);
+      break;
+    }
+    case "Shielding Storm": {
+      if (ddb) document = shieldingStormEffect(ddb, document);
       break;
     }
     case "Unarmored Movement": {
@@ -12776,300 +13381,12 @@ async function featureEffectAdjustment(ddb, character, document, midiEffects = f
     }
   }
 
-  if (deps.midiQolInstalled && midiEffects) {
-    document = (0,effects/* applyDefaultMidiFlags */.VN)(document);
-    switch (name) {
-      case "Arcane Recovery": {
-        document = await arcaneRecoveryEffect(document);
-        break;
-      }
-      case "Bladesong": {
-        document = bladesongEffect(document);
-        break;
-      }
-      case "Bardic Inspiration": {
-        document = bardicInspirationEffect(document);
-        break;
-      }
-      case "Blessed Strikes": {
-        document = blessedStrikesEffect(document);
-        break;
-      }
-      case "Cloud Rune": {
-        document = cloudRuneEffect(document);
-        break;
-      }
-      case "Crossbow Expert": {
-        document = crossbowExpertEffect(document);
-        break;
-      }
-      case "Daunting Roar": {
-        document = dauntingRoarEffect(document);
-        break;
-      }
-      case "Deflect Missiles": {
-        document = deflectMissilesEffect(document);
-        break;
-      }
-      case "Deflect Missiles Attack": {
-        document = deflectMissilesAttackEffect(document);
-        break;
-      }
-      case "Evasion": {
-        document = evasionEffect(document);
-        break;
-      }
-      case "Empty Body":
-      case "Ki: Empty Body": {
-        document = kiEmptyBodyEffect(document);
-        break;
-      }
-      case "Fighting Style: Interception": {
-        document = fightingStyleInterceptionEffect(document);
-        break;
-      }
-      case "Fire Rune": {
-        document = fireRuneEffect(document);
-        break;
-      }
-      case "Form of the Beast: Tail (reaction)": {
-        document = formOfTheBeastReactionEffect(document);
-        break;
-      }
-      case "Fury of the Small": {
-        document = await furyOfTheSmallEffect(document);
-        break;
-      }
-      case "Giant's Might": {
-        document = giantsMightEffect(document);
-        break;
-      }
-      case "Glide (Reaction)": {
-        document = (0,effects/* forceManualReaction */.pi)(document);
-        break;
-      }
-      case "Hadozee Dodge": {
-        document = hadozeDodgeEffect(document);
-        break;
-      }
-      case "Indomitable": {
-        document = indomitableEffect(document);
-        break;
-      }
-      case "Intimidating Presence": {
-        document = intimidatingPresenceEffect(document);
-        break;
-      }
-      case "Mantle of Inspiration": {
-        document = await mantleOfInspirationEffect(document);
-        break;
-      }
-      case "Mask of the Wild": {
-        document = await (0,maskOfTheWild/* maskOfTheWildEffect */.L)(document);
-        break;
-      }
-      case "Patient Defense": {
-        document = patientDefenseEffect(document);
-        break;
-      }
-      case "Potent Cantrip": {
-        document = potentCantripEffect(document);
-        break;
-      }
-      case "Equine Build":
-      case "Little Giant":
-      case "Hippo Build":
-      case "Powerful Build": {
-        document = powerfulBuild(document);
-        break;
-      }
-      case "Celestial Revelation (Radiant Soul)":
-      case "Radiant Soul": {
-        document = await radiantSoulEffect(document);
-        break;
-      }
-      case "Raging Storm: Sea": {
-        document = await ragingStormSeaEffect(document);
-        break;
-      }
-      case "Raging Storm: Tundra": {
-        document = await ragingStormTundraEffect(document);
-        break;
-      }
-      case "Reckless Attack": {
-        document = (0,recklessAttack/* recklessAttackEffect */.k)(document);
-        break;
-      }
-      case "Channel Divinity: Sacred Weapon":
-      case "Sacred Weapon": {
-        document = await sacredWeaponEffect(document);
-        break;
-      }
-      case "Sculpt Spells": {
-        document = sculptSpellsEffect(document);
-        break;
-      }
-      case "Sharpshooter": {
-        document = sharpShooterEffect(document);
-        break;
-      }
-      case "Savage Attacker": {
-        document = savageAttackerEffect(document);
-        break;
-      }
-      case "Shift": {
-        if (ddb && character) document = shiftEffect(ddb, character, document);
-        break;
-      }
-      case "Slow Fall": {
-        document = (0,effects/* forceManualReaction */.pi)(document);
-        break;
-      }
-      case "Squire of Solamnia: Precise Strike": {
-        document = await squireOfSolamniaEffect(document);
-        break;
-      }
-      case "Steady Aim": {
-        document = steadyAimEffect(document);
-        break;
-      }
-      case "Stone Rune": {
-        document = stoneRuneEffect(document);
-        break;
-      }
-      case "Stone's Endurance":
-      case "Stone’s Endurance": {
-        document = stonesEnduranceEffect(document);
-        break;
-      }
-      case "Storm Aura: Tundra": {
-        document = await stormAuraTundraEffect(document);
-        break;
-      }
-      case "Storm Rune": {
-        document = stormRuneEffect(document);
-        break;
-      }
-      case "Storm Soul: Desert":
-      case "Storm Soul: Sea":
-      case "Storm Soul: Tundra":
-      case "Storm Soul": {
-        if (ddb) document = await stormSoulEffect(ddb, document);
-        break;
-      }
-      case "Swiftstride Reaction": {
-        document = (0,effects/* forceManualReaction */.pi)(document);
-        break;
-      }
-      case "Uncanny Dodge": {
-        document = (0,uncannyDodge/* uncannyDodgeEffect */.Q)(document);
-        break;
-      }
-      case "Vedalken Dispassion": {
-        document = vedalkenDispassionEffect(document);
-        break;
-      }
-      case "Visage of the Astral Self": {
-        document = visageOfTheAstralSelfEffect(document);
-        break;
-      }
-      case "War Caster":
-      case "Warcaster": {
-        document = warCasterEffect(document);
-        break;
-      }
-      // no default
-    }
-  }
-
   if (!deps.hasCore || !midiEffects) {
     return (0,effects/* forceItemEffect */.Wk)(document);
   }
 
-
-  if (name.startsWith("Maneuvers: ") && ddb && character) {
-    document = await maneuversEffect(ddb, character, document);
-  }
-  if (name.startsWith("Rune Carver: ")) {
-    document = await runeCarverEffect(document);
-  }
-  switch (name) {
-    case "Ancestral Protectors": {
-      document = await ancestralProtectorsEffect(document);
-      break;
-    }
-    case "Arcane Ward": {
-      document = await arcaneWardEffect(document);
-      break;
-    }
-    case "Blessed Healer": {
-      document = await blessedHealerEffect(document);
-      break;
-    }
-    case "Convert Sorcery Points":
-    case "Font of Magic": {
-      document = await fontOfMagicEffect(document);
-      break;
-    }
-    case "Crusher": {
-      document = await crusherEffect(document);
-      break;
-    }
-    case "Crusher: Critical": {
-      document = await crusherCriticalEffect(document);
-      break;
-    }
-    case "Deft Strike": {
-      document = await deftStrikeEffect(document);
-      break;
-    }
-    case "Demiurgic Colossus": {
-      document = demiurgicColossusEffect(document);
-      break;
-    }
-    case "Favored Foe": {
-      document = await favoredFoeEffect(document);
-      break;
-    }
-    case "Giant Stature":
-    case "Giant's Havoc: Giant Stature": {
-      document = giantStatureEffect(document);
-      break;
-    }
-    case "Piercer": {
-      document = await piercerCriticalEffect(document);
-      document = await piercerRerollEffect(document);
-      break;
-    }
-    case "Piercer: Reroll Damage": {
-      document = await piercerRerollEffect(document);
-      break;
-    }
-    case "Piercer: Critical Hit": {
-      document = await piercerCriticalEffect(document);
-      break;
-    }
-    case "Planar Warrior": {
-      document = await planarWarriorEffect(document);
-      break;
-    }
-    case "Shielding Storm": {
-      if (ddb) document = shieldingStormEffect(ddb, document);
-      break;
-    }
-    case "Slasher: Reduce Speed": {
-      document = await slasherReduceSpeedEffect(document);
-      break;
-    }
-    case "Slasher: Critical Hit": {
-      document = await slasherCriticalEffect(document);
-      break;
-    }
-    case "Slayer's Prey": {
-      document = await slayersPreyEffect(document);
-      break;
-    }
-    // no default
+  if (deps.midiQolInstalled && midiEffects) {
+    document = await midiFeatureEffects(ddb, character, document);
   }
 
   return (0,effects/* forceItemEffect */.Wk)(document);
@@ -13234,8 +13551,8 @@ function generateTauntEffect(document) {
   return document;
 }
 
-// EXTERNAL MODULE: ./src/effects/specialFeats.js + 74 modules
-var specialFeats = __webpack_require__(5470);
+// EXTERNAL MODULE: ./src/effects/specialFeats.js + 76 modules
+var specialFeats = __webpack_require__(3747);
 // EXTERNAL MODULE: ./src/effects/DDBMacros.js
 var DDBMacros = __webpack_require__(6516);
 ;// CONCATENATED MODULE: ./src/effects/monsterFeatures/skeletalJuggernautEffects.js
@@ -13534,9 +13851,12 @@ async function spellReflectionEffect(document) {
   return document;
 }
 
+// EXTERNAL MODULE: ./src/logger.js
+var logger = __webpack_require__(5259);
 ;// CONCATENATED MODULE: ./src/effects/specialMonsters.js
 /* eslint-disable no-await-in-loop */
 /* eslint-disable require-atomic-updates */
+
 
 
 
@@ -13593,15 +13913,31 @@ function transferEffectsToActor(document) {
  * @param {*} document
  */
 // eslint-disable-next-line complexity
-async function monsterFeatureEffectAdjustment(ddbMonster) {
+async function monsterFeatureEffectAdjustment(ddbMonster, addMidiEffects = false) {
   let npc = duplicate(ddbMonster.npc);
 
   if (!npc.effects) npc.effects = [];
 
   const deps = (0,effects/* effectModules */.xV)();
-  if (!deps.hasCore) {
+  if (!deps.hasCore || !addMidiEffects) {
+    logger/* default.debug */.Z.debug(`Adding Condition Effects to ${npc.name}`);
+    // damage over time effects
+    for (let [index, item] of npc.items.entries()) {
+      // auto condition effect
+      if (item.type !== "spell") {
+        // console.warn(`Auto-adding Condition Effect to ${item.name} in ${npc.name}`);
+        const overTimeResults = (0,overTimeEffect/* generateConditionOnlyEffect */.pD)(npc, item);
+        item = overTimeResults.document;
+        npc = overTimeResults.actor;
+      }
+
+      item = (0,effects/* forceItemEffect */.Wk)(item);
+      npc.items[index] = item;
+    };
     return npc;
   }
+
+  if (!addMidiEffects) return npc;
 
   // damage over time effects
   for (let [index, item] of npc.items.entries()) {
@@ -13829,17 +14165,24 @@ function acidArrowEffect(document) {
 
 async function aidEffect(document) {
   let effect = baseSpellEffect(document, document.name);
-  effect.changes.push({
-    key: "system.attributes.hp.tempmax",
-    value: "5 * (@spellLevel - 1)",
-    mode: CONST.ACTIVE_EFFECT_MODES.ADD,
-    priority: 20,
-  });
 
   if ((0,effects/* effectModules */.xV)().midiQolInstalled) {
+    effect.changes.push({
+      key: "system.attributes.hp.tempmax",
+      value: "5 * (@spellLevel - 1)",
+      mode: CONST.ACTIVE_EFFECT_MODES.ADD,
+      priority: 20,
+    });
     document.system.damage = { parts: [], versatile: "", value: "" };
     await DDBMacros/* default.setItemMacroFlag */.Z.setItemMacroFlag(document, "spell", "aid.js");
     effect.changes.push(DDBMacros/* default.generateMacroChange */.Z.generateMacroChange({ macroValues: "@spellLevel", macroType: "spell", macroName: "aid.js", priority: 0 }));
+  } else if ((0,effects/* effectModules */.xV)().daeInstalled) {
+    effect.changes.push({
+      key: "system.attributes.hp.tempmax",
+      value: "5 * (@spellLevel - 1)",
+      mode: CONST.ACTIVE_EFFECT_MODES.ADD,
+      priority: 20,
+    });
   }
   document.effects.push(effect);
   return document;
@@ -14222,7 +14565,7 @@ async function brandingSmiteEffect(document) {
   effect.changes.push(
     {
       key: "flags.dnd5e.DamageBonusMacro",
-      value: "ItemMacro.Branding Smite",
+      value: DDBMacros/* default.generateItemMacroValue */.Z.generateItemMacroValue({ macroType: "spell", macroName: "brandingSmite.js", document }),
       mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
       priority: "20",
     },
@@ -15385,7 +15728,7 @@ async function huntersMarkEffect(document) {
   let damageBonusEffect = baseSpellEffect(document, "Hunter's Mark");
   damageBonusEffect.changes.push({
     key: "flags.dnd5e.DamageBonusMacro",
-    value: "ItemMacro",
+    value: DDBMacros/* default.generateItemMacroValue */.Z.generateItemMacroValue({ macroType: "spell", macroName: "huntersMark.js", document }),
     mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
     priority: 20,
   });
@@ -15760,15 +16103,21 @@ function passWithoutTraceEffect(document) {
 ;// CONCATENATED MODULE: ./src/effects/spells/phantasmalKiller.js
 
 
-function phantasmalKillerEffect(document) {
+
+async function phantasmalKillerEffect(document) {
   let effect = baseSpellEffect(document, document.name);
-  effect.changes.push({
-    key: "flags.midi-qol.OverTime",
-    mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
-    value:
-      "label=Phantasmal Killer (Start of Turn),turn=end,saveAbility=wis,saveDC=@attributes.spelldc,saveMagic=true,damageRoll=(@item.level)d10,damageType=psychic,savingThrow=true,damageBeforeSave=false,killAnim=true",
-    priority: "20",
-  });
+  (0,effects/* addStatusEffectChange */.sb)(effect, "Frightened", 20, true);
+  if ((0,effects/* effectModules */.xV)().midiQolInstalled) {
+    effect.changes.push({
+      key: "flags.midi-qol.OverTime",
+      mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
+      value:
+        "label=Phantasmal Killer (End of Turn),turn=end,saveAbility=wis,saveDC=@attributes.spelldc,saveMagic=true,damageRoll=(@item.level)d10,damageType=psychic,savingThrow=true,damageBeforeSave=false,killAnim=true",
+      priority: "20",
+    });
+    document.system.damage = { parts: [], versatile: "", value: "" };
+  }
+
   document.effects.push(effect);
 
   return document;
@@ -16413,26 +16762,16 @@ function sunbeamEffect(document) {
 
 ;// CONCATENATED MODULE: ./src/effects/spells/swordburst.js
 function swordBurstEffect(document) {
-  document.system.target = {
-    value: 5,
-    width: null,
-    units: "ft",
-    type: "creature",
-  };
-  document.system.range = { value: null, units: "special", long: null };
+  setProperty(document, "flags.midi-qol.AoETargetType", "any");
+  setProperty(document, "flags.midi-qol.AoETargetTypeIncludeSelf", false);
 
   return document;
 }
 
 ;// CONCATENATED MODULE: ./src/effects/spells/thunderclap.js
 function thunderclapEffect(document) {
-  document.system.target = {
-    value: 5,
-    width: null,
-    units: "ft",
-    type: "creature",
-  };
-  document.system.range = { value: null, units: "special", long: null };
+  setProperty(document, "flags.midi-qol.AoETargetType", "any");
+  setProperty(document, "flags.midi-qol.AoETargetTypeIncludeSelf", false);
 
   return document;
 }
@@ -16446,7 +16785,7 @@ async function thunderousSmiteEffect(document) {
   effect.changes.push(
     {
       key: "flags.dnd5e.DamageBonusMacro",
-      value: "ItemMacro.Thunderous Smite",
+      value: DDBMacros/* default.generateItemMacroValue */.Z.generateItemMacroValue({ macroType: "spell", macroName: "thunderousSmite.js", document }),
       mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
       priority: "20",
     },
@@ -16654,7 +16993,7 @@ async function zephyrStrikeEffect(document) {
     {
       key: "flags.midi-qol.optional.ZephyrStrike.macroToCall",
       mode: CONST.ACTIVE_EFFECT_MODES.CUSTOM,
-      value: "ItemMacro.Zephyr Strike",
+      value: DDBMacros/* default.generateItemMacroValue */.Z.generateItemMacroValue({ macroType: "spell", macroName: "zephyrStrike.js", document }),
       priority: "20",
     },
     {
@@ -17013,6 +17352,10 @@ async function basicSpellEffects(document) {
       document = passWithoutTraceEffect(document);
       break;
     }
+    case "Phantasmal Killer": {
+      document = await phantasmalKillerEffect(document);
+      break;
+    }
     case "Protection from Poison": {
       document = protectionfromPoisonEffect(document);
       break;
@@ -17268,10 +17611,6 @@ async function midiEffectAdjustment(document) {
     }
     case "Moonbeam": {
       document = await moonbeamEffect(document);
-      break;
-    }
-    case "Phantasmal Killer": {
-      document = phantasmalKillerEffect(document);
       break;
     }
     case "Polymorph": {
@@ -20423,19 +20762,21 @@ class DDBItemImporter {
       const srdItems = await this.getSRDCompendiumItems();
       if (removeDuplicates) this.removeItems(srdItems, matchDDBId);
       this.documents = this.documents.concat(srdItems);
-      this.documents = await _Iconizer_js__WEBPACK_IMPORTED_MODULE_5__/* ["default"].updateIcons */ .Z.updateIcons(this.documents);
-    } else {
-      this.documents = await _Iconizer_js__WEBPACK_IMPORTED_MODULE_5__/* ["default"].updateIcons */ .Z.updateIcons(this.documents);
     }
+  }
+
+  async iconAdditions() {
+    this.documents = await _Iconizer_js__WEBPACK_IMPORTED_MODULE_5__/* ["default"].updateIcons */ .Z.updateIcons(this.documents);
   }
 
   static async buildHandler(type, documents, updateBool,
     { srdFidding = true, removeSRDDuplicates = true, ids = null, vision5e = false, chrisPremades = false, matchFlags = [],
-      deleteBeforeUpdate = null, filterDuplicates = true, useCompendiumFolders = null } = {}
+      deleteBeforeUpdate = null, filterDuplicates = true, useCompendiumFolders = null, updateIcons = true } = {}
   ) {
     const handler = new DDBItemImporter(type, documents, { matchFlags, deleteBeforeUpdate, useCompendiumFolders });
     await handler.init();
     if (srdFidding) await handler.srdFiddling(removeSRDDuplicates);
+    if (updateIcons) await handler.iconAdditions();
     const filteredItems = (ids !== null && ids.length > 0)
       ? handler.documents.filter((s) => s.flags?.ddbimporter?.definitionId && ids.includes(String(s.flags.ddbimporter.definitionId)))
       : handler.documents;
@@ -20573,11 +20914,12 @@ async function importCacheLoad() {
  */
 // eslint-disable-next-line complexity
 function parseMatch(ddb, character, match, feature) {
+  const featureDef = feature.definition ?? feature;
   const splitMatchAt = match.split("@");
   let result = splitMatchAt[0];
   const classOption = [ddb.character.options.race, ddb.character.options.class, ddb.character.options.feat]
     .flat()
-    .find((option) => option.definition.id === feature.componentId);
+    .find((option) => option.definition.id === featureDef.componentId);
   let linktext = `${result}`;
 
   // scalevalue
@@ -20590,7 +20932,7 @@ function parseMatch(ddb, character, match, feature) {
     } else {
       _logger_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].warn */ .Z.warn("Unable to parse scalevalue", {
         ddb,
-        feature,
+        feature: featureDef,
         scaleValue,
       });
     }
@@ -20650,12 +20992,13 @@ function parseMatch(ddb, character, match, feature) {
   // classlevel*5
   // (classlevel/2)@roundup
   if (result.includes("classlevel")) {
-    const cls = feature.classId
+    const cls = featureDef.classId
       ? ddb.character.classes.find((cls) =>
-        cls.definition.id == feature.classId
-        || feature.classId === cls.subclassDefinition?.id
+        cls.definition.id == featureDef.classId
+        || featureDef.classId === cls.subclassDefinition?.id
       )
-      : _DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].findClassByFeatureId */ .Z.findClassByFeatureId(ddb, feature.componentId);
+      : _DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].findClassByFeatureId */ .Z.findClassByFeatureId(ddb, featureDef.componentId);
+
     if (cls) {
       const clsLevel = ` + @classes.${cls.definition.name.toLowerCase().replace(" ", "-")}.levels`;
       result = result.replace("classlevel", clsLevel);
@@ -20669,14 +21012,14 @@ function parseMatch(ddb, character, match, feature) {
         linktext = result.replace("classlevel", ` (${optionCls.definition.name} Level) `);
       } else {
         _logger_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].error */ .Z.error(
-          `Unable to parse option class info. classOption ComponentId is: ${classOption.componentId}.  ComponentId is ${feature.componentId}`
+          `Unable to parse option class info. classOption ComponentId is: ${classOption.componentId}.  ComponentId is ${featureDef.componentId}`
         );
       }
     } else {
-      if (!feature.componentId) {
-        _logger_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].debug */ .Z.debug("Feature failed componentID parse", feature);
+      if (!featureDef.componentId) {
+        _logger_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].debug */ .Z.debug("Feature failed componentID parse", featureDef);
       }
-      _logger_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].error */ .Z.error(`Unable to parse option class info. ComponentId is ${feature.componentId}`);
+      _logger_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].error */ .Z.error(`Unable to parse option class info. ComponentId is ${featureDef.componentId}`);
     }
   }
 
@@ -20718,7 +21061,7 @@ function parseMatch(ddb, character, match, feature) {
 
   // limiteduse
   if (result.includes("limiteduse")) {
-    const limitedUse = feature.limitedUse?.maxUses || "";
+    const limitedUse = featureDef.limitedUse?.maxUses || "";
     result = result.replace("limiteduse", limitedUse);
     linktext = result.replace("limiteduse", ` (Has limited uses) `);
   }
@@ -20916,7 +21259,7 @@ function replaceTag(match, p1, p2, p3, offset, string) {
 
   let result = p2;
   for (const type of types) {
-    if (type[lowerCaseTag]) {
+    if (type[lowerCaseTag] && type.reference) {
       result = `&Reference[${lowerCaseTag}]{${p2}}`;
       break;
     }
@@ -20942,6 +21285,8 @@ function parseSRDReferences(text) {
 
   for (const type of types) {
     for (const [key, value] of Object.entries(type)) {
+      // eslint-disable-next-line no-continue
+      if (!value.reference) continue;
       const linkRegEx = new RegExp(`(^| |\\(|\\[|>)(${value.label})( |\\)|\\]|\\.|,|$|\n|<)`, "ig");
       const replaceRule = (match, p1, p2, p3) => {
         return `${p1}&Reference[${key}]{${p2}}${p3}`;
@@ -21047,14 +21392,15 @@ function rollMatch(text, matchString) {
  */
 function parseTemplateString(ddb, character, text, feature) {
   if (!text) return text;
+  const featureDefinition = feature.definition ?? feature;
 
   text = text.replace(/\r\n•/g, "</p>\r\n<p>&bull;");
   let result = {
-    id: feature.id,
-    entityTypeId: feature.entityTypeId,
-    componentId: feature.componentId ? feature.componentId : null,
-    componentTypeId: feature.componentTypeId ? feature.componentTypeId : null,
-    damageTypeId: feature.damageTypeId ? feature.damageTypeId : null,
+    id: featureDefinition.id,
+    entityTypeId: featureDefinition.entityTypeId,
+    componentId: featureDefinition.componentId ? featureDefinition.componentId : null,
+    componentTypeId: featureDefinition.componentTypeId ? featureDefinition.componentTypeId : null,
+    damageTypeId: featureDefinition.damageTypeId ? featureDefinition.damageTypeId : null,
     text,
     resultStrings: [],
     displayStrings: [],
@@ -21205,7 +21551,9 @@ function parseTemplateString(ddb, character, text, feature) {
   result.text = result.text.replace(/\+<\/strong>\+/g, "+</strong>");
 
   result.text = parseTags(result.text);
-  character.flags.ddbimporter.dndbeyond.templateStrings.push(result);
+  if (hasProperty(character, "flags.ddbimporter.dndbeyond.templateStrings")) {
+    character.flags.ddbimporter.dndbeyond.templateStrings.push(result);
+  }
 
   // console.warn(`${feature.name} tempalte`, result);
   return result;
@@ -22760,7 +23108,7 @@ class Iconizer {
 
       const pathPostfix = useDeepPaths ? `/item/${item.type}` : "";
 
-      if (item.flags && item.flags.ddbimporter && item.flags.ddbimporter && item.flags.ddbimporter.dndbeyond) {
+      if (hasProperty(item, "flags.ddbimporter.dndbeyond")) {
         if (item.flags.ddbimporter.dndbeyond.avatarUrl) {
           const avatarUrl = item.flags.ddbimporter.dndbeyond['avatarUrl'];
           if (avatarUrl && avatarUrl != "") {
@@ -22792,6 +23140,33 @@ class Iconizer {
     return Promise.all(itemMap);
   }
 
+  static async getDDBHintImages(type, items, download) {
+    _apps_DDBMuncher_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].munchNote */ .Z.munchNote(`Fetching DDB Hint Images for ${type}`);
+    const downloadImages = (download) ? true : game.settings.get(_settings_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].MODULE_ID */ .Z.MODULE_ID, "munching-policy-download-images");
+    const remoteImages = game.settings.get(_settings_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].MODULE_ID */ .Z.MODULE_ID, "munching-policy-remote-images");
+    const targetDirectory = game.settings.get(_settings_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].MODULE_ID */ .Z.MODULE_ID, "other-image-upload-directory").replace(/^\/|\/$/g, "");
+    const useDeepPaths = game.settings.get(_settings_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].MODULE_ID */ .Z.MODULE_ID, "use-deep-file-paths");
+
+    const imageNamePrefix = useDeepPaths ? "" : type;
+
+    for (const item of items) {
+      // eslint-disable-next-line no-continue
+      if (item.type !== type || item.img) continue;
+      const ddbImg = getProperty(item, "flags.ddbimporter.ddbImg");
+      // eslint-disable-next-line no-continue
+      if (!ddbImg || ddbImg === "") continue;
+      const pathPostfix = useDeepPaths ? `/${type}/${item.type}` : "";
+      const name = useDeepPaths ? `${item.name}` : item.name;
+      const downloadOptions = { type, name, download: downloadImages, remoteImages, targetDirectory, pathPostfix, imageNamePrefix };
+      // eslint-disable-next-line no-await-in-loop
+      const img = await _FileHelper_js__WEBPACK_IMPORTED_MODULE_5__/* ["default"].getImagePath */ .Z.getImagePath(ddbImg, downloadOptions);
+      if (img) item.img = img;
+    }
+
+    _apps_DDBMuncher_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].munchNote */ .Z.munchNote("");
+
+    return items;
+  }
 
   static async getDDBGenericItemImages(download) {
     _apps_DDBMuncher_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].munchNote */ .Z.munchNote(`Fetching DDB Generic Item icons`);
@@ -23008,6 +23383,8 @@ class Iconizer {
 
     const inBuiltIcons = game.settings.get(_settings_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].MODULE_ID */ .Z.MODULE_ID, "munching-policy-use-inbuilt-icons");
     if (inBuiltIcons) {
+      items = await Iconizer.getDDBHintImages("class", items);
+      items = await Iconizer.getDDBHintImages("subclass", items);
       _logger_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].debug */ .Z.debug(`Inbuilt icon matching (Monster? ${monster ? monsterName : monster})`);
       items = await Iconizer.copyInbuiltIcons(items, monster, monsterName);
     }
@@ -23467,7 +23844,7 @@ const MuncherSettings = {
       {
         name: "condition",
         isChecked: game.settings.get(_settings_js__WEBPACK_IMPORTED_MODULE_5__/* ["default"].MODULE_ID */ .Z.MODULE_ID, "sync-policy-condition"),
-        description: "Exhaustion",
+        description: "Conditions/Exhaustion",
         enabled: true,
       },
       {
@@ -25062,6 +25439,7 @@ const utils = {
 /* harmony export */   "Z": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var _lib_FileHelper_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2397);
+/* eslint-disable no-continue */
 
 
 const logger = {
@@ -25203,9 +25581,22 @@ const logger = {
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (logger);
 
+const getCircularReplacer = () => {
+  const seen = new WeakSet();
+  return (key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return;
+      }
+      seen.add(value);
+    }
+    // eslint-disable-next-line consistent-return
+    return value;
+  };
+};
 
 function downloadLog() {
-  _lib_FileHelper_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].download */ .Z.download(JSON.stringify(CONFIG.debug.ddbimporter.log), `ddbimporter-log-data.json`, "application/json");
+  _lib_FileHelper_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].download */ .Z.download(JSON.stringify(CONFIG.debug.ddbimporter.log, getCircularReplacer()), `ddbimporter-log-data.json`, "application/json");
   setProperty(CONFIG.debug, "ddbimporter.log", []);
 }
 
@@ -25847,7 +26238,12 @@ async function getNPCImage(npcData, { type = "monster", forceUpdate = false, for
   const hasAvatarProcessedAlready = CONFIG.DDBI.KNOWN.AVATAR_LOOKUPS.get(ddbAvatarUrl);
   const hasTokenProcessedAlready = CONFIG.DDBI.KNOWN.TOKEN_LOOKUPS.get(ddbTokenUrl);
 
-  const npcType = type.startsWith("vehicle") ? "vehicle" : npcData.system.details.type.value;
+  const npcType = type.startsWith("vehicle")
+    ? "vehicle"
+    : npcData.system.details.type.value
+      ?? (npcData.system.details.type.custom && npcData.system.details.type.custom !== ""
+        ? npcData.system.details.type.custom
+        : "unknown");
   const genericNPCName = _lib_utils_js__WEBPACK_IMPORTED_MODULE_5__/* ["default"].referenceNameString */ .Z.referenceNameString(npcType);
   const npcName = _lib_utils_js__WEBPACK_IMPORTED_MODULE_5__/* ["default"].referenceNameString */ .Z.referenceNameString(npcData.name);
 
@@ -26149,7 +26545,7 @@ function copyExistingMonsterImages(monsters, existingMonsters) {
 /* harmony import */ var _settings_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(6451);
 /* harmony import */ var _lib_DDBProxy_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(546);
 /* harmony import */ var _lib_PatreonHelper_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(8636);
-/* harmony import */ var _parser_DDBCharacter_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(5992);
+/* harmony import */ var _parser_DDBCharacter_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(737);
 /* harmony import */ var _effects_chrisPremades_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(7786);
 /* harmony import */ var _effects_vision5e_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(5042);
 /* harmony import */ var _effects_DDBMacros_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(6516);
@@ -26255,6 +26651,7 @@ function getItemData(sourceFilter) {
   const body = { cobalt: cobaltCookie, campaignId: campaignId, betaKey: betaKey };
   const debugJson = game.settings.get(_settings_js__WEBPACK_IMPORTED_MODULE_6__/* ["default"].MODULE_ID */ .Z.MODULE_ID, "debug-json");
   const enableSources = game.settings.get(_settings_js__WEBPACK_IMPORTED_MODULE_6__/* ["default"].MODULE_ID */ .Z.MODULE_ID, "munching-policy-use-source-filter");
+  const useGenerics = game.settings.get(_settings_js__WEBPACK_IMPORTED_MODULE_6__/* ["default"].MODULE_ID */ .Z.MODULE_ID, "munching-policy-use-generic-items");
   const sources = enableSources
     ? game.settings.get(_settings_js__WEBPACK_IMPORTED_MODULE_6__/* ["default"].MODULE_ID */ .Z.MODULE_ID, "munching-policy-muncher-sources").flat()
     : [];
@@ -26279,8 +26676,9 @@ function getItemData(sourceFilter) {
         return data;
       })
       .then((data) => {
-        if (sources.length == 0 || !sourceFilter) return data.data;
-        return data.data.filter((item) =>
+        const genericsFilteredData = data.data.filter((item) => item.canBeAddedToInventory || useGenerics);
+        if (sources.length == 0 || !sourceFilter) return genericsFilteredData;
+        return genericsFilteredData.filter((item) =>
           item.sources.some((source) => sources.includes(source.sourceId))
         );
       })
@@ -26321,7 +26719,7 @@ async function addMagicItemSpells(items, spells, updateBool) {
   });
 }
 
-async function parseItems(ids = null) {
+async function parseItems(ids = null, deleteBeforeUpdate = null) {
   const updateBool = game.settings.get(_settings_js__WEBPACK_IMPORTED_MODULE_6__/* ["default"].MODULE_ID */ .Z.MODULE_ID, "munching-policy-update-existing");
   const magicItemsInstalled = !!game.modules.get("magicitems");
   const uploadDirectory = game.settings.get(_settings_js__WEBPACK_IMPORTED_MODULE_6__/* ["default"].MODULE_ID */ .Z.MODULE_ID, "other-image-upload-directory").replace(/^\/|\/$/g, "");
@@ -26358,9 +26756,10 @@ async function parseItems(ids = null) {
 
   await _lib_Iconizer_js__WEBPACK_IMPORTED_MODULE_13__/* ["default"].preFetchDDBIconImages */ .Z.preFetchDDBIconImages();
 
-  const itemHandler = new _lib_DDBItemImporter_js__WEBPACK_IMPORTED_MODULE_14__/* ["default"] */ .Z("items", items);
+  const itemHandler = new _lib_DDBItemImporter_js__WEBPACK_IMPORTED_MODULE_14__/* ["default"] */ .Z("items", items, { deleteBeforeUpdate });
   await itemHandler.init();
   await itemHandler.srdFiddling();
+  await itemHandler.iconAdditions();
   const filteredItems = (ids !== null && ids.length > 0)
     ? itemHandler.documents.filter((s) => s.flags?.ddbimporter?.definitionId && ids.includes(String(s.flags.ddbimporter.definitionId)))
     : itemHandler.documents;
@@ -26631,7 +27030,7 @@ function getSpellData(className, sourceFilter) {
   });
 }
 
-async function parseSpells(ids = null) {
+async function parseSpells(ids = null, deleteBeforeUpdate = null) {
   const updateBool = game.settings.get(settings/* default.MODULE_ID */.Z.MODULE_ID, "munching-policy-update-existing");
   const uploadDirectory = game.settings.get(settings/* default.MODULE_ID */.Z.MODULE_ID, "other-image-upload-directory").replace(/^\/|\/$/g, "");
 
@@ -26686,9 +27085,10 @@ async function parseSpells(ids = null) {
   await Iconizer/* default.preFetchDDBIconImages */.Z.preFetchDDBIconImages();
 
   const uniqueSpells = spells.filter((v, i, a) => a.findIndex((t) => t.name === v.name) === i);
-  const itemHandler = new DDBItemImporter/* default */.Z("spells", uniqueSpells);
+  const itemHandler = new DDBItemImporter/* default */.Z("spells", uniqueSpells, { deleteBeforeUpdate });
   await itemHandler.init();
   await itemHandler.srdFiddling();
+  await itemHandler.iconAdditions();
   const filteredSpells = (ids !== null && ids.length > 0)
     ? itemHandler.documents.filter((s) => s.flags?.ddbimporter?.definitionId && ids.includes(String(s.flags.ddbimporter.definitionId)))
     : itemHandler.documents;
@@ -27943,7 +28343,8 @@ function buildTable(parsedTable, keys, diceKeys, tableName, parentName) {
 async function buildAndImportTable(parsedTable, keys, diceKeys, finalName, name, updateExisting) {
   const data = buildTable(parsedTable, keys, diceKeys, finalName, name);
 
-  const handler = await DDBItemImporter/* default.buildHandler */.Z.buildHandler("tables", data, updateExisting, { srdFidding: false });
+  const handlerOptions = { srdFidding: false, updateIcons: false };
+  const handler = await DDBItemImporter/* default.buildHandler */.Z.buildHandler("tables", data, updateExisting, handlerOptions);
   return handler.results;
 }
 
@@ -29219,6 +29620,7 @@ async function parseTransports(ids = null) {
   DDBMuncher/* default.munchNote */.Z.munchNote("");
   DDBMuncher/* default.munchNote */.Z.munchNote(`Fiddling with the SRD data...`, true);
   await vehicleHandler.srdFiddling();
+  await vehicleHandler.iconAdditions();
 
   DDBMuncher/* default.munchNote */.Z.munchNote(`Generating Icon Map..`, true);
   await (0,importMonster/* generateIconMap */.NM)(vehicleHandler.documents);
@@ -29266,7 +29668,7 @@ async function parseTransports(ids = null) {
 
 /***/ }),
 
-/***/ 5992:
+/***/ 737:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 
@@ -29914,6 +30316,7 @@ class DDBClass {
           entityTypeId: this.ddbClass.entityTypeId,
           type: "class",
           isStartingClass: this.ddbClass.isStartingClass,
+          ddbImg: this.ddbClass.definition.portraitAvatarUrl,
         },
         obsidian: {
           source: {
@@ -30445,28 +30848,33 @@ class DDBClass {
     this.data.system.advancement = this.data.system.advancement.concat(advancements);
   }
 
-  _generateArmorAdvancement(feature, level) {
+  _generateArmorAdvancement(feature, availableToMulticlass, level) {
     const modFilters = {
       includeExcludedEffects: true,
       classId: this.ddbClassDefinition.id,
       exactLevel: level,
+      availableToMulticlass: availableToMulticlass === false ? null : true,
       useUnfilteredModifiers: true,
       filterOnFeatureIds: [feature.id],
     };
     const mods = this.options.noMods ? [] : DDBHelper/* default.getChosenClassModifiers */.Z.getChosenClassModifiers(this.ddbData, modFilters);
-    return this.advancementHelper.getArmorAdvancement(mods, feature, level);
+    return this.advancementHelper.getArmorAdvancement(mods, feature, availableToMulticlass, level);
   }
 
   _generateArmorAdvancements() {
     const advancements = [];
 
     for (let i = 0; i <= 20; i++) {
-      const armorFeatures = this._armorFeatures.filter((f) => f.requiredLevel === i);
+      [true, false].forEach((availableToMulticlass) => {
+        if ((!availableToMulticlass && i > 1)) return;
+        if (this._isSubClass && !availableToMulticlass) return;
+        const armorFeatures = this._armorFeatures.filter((f) => f.requiredLevel === i);
 
-      for (const feature of armorFeatures) {
-        const advancement = this._generateArmorAdvancement(feature, i);
-        if (advancement) advancements.push(advancement.toObject());
-      }
+        for (const feature of armorFeatures) {
+          const advancement = this._generateArmorAdvancement(feature, availableToMulticlass, i);
+          if (advancement) advancements.push(advancement.toObject());
+        }
+      });
     }
 
     this.data.system.advancement = this.data.system.advancement.concat(advancements);
@@ -30744,6 +31152,7 @@ class DDBSubClass extends DDBClass {
           subclassDefinitionId: this.ddbClass.id,
           id: this.ddbClass.subclassDefinition.id,
           type: "class",
+          ddbImg: this.ddbClass.subclassDefinition.portraitAvatarUrl ?? this.ddbClass.definition.portraitAvatarUrl,
         },
         obsidian: {
           source: {
@@ -31074,1208 +31483,12 @@ class CharacterClassFactory {
 
 // EXTERNAL MODULE: ./src/parser/item/infusions.js
 var infusions = __webpack_require__(7336);
-// EXTERNAL MODULE: ./src/effects/effects.js + 1 modules
-var effects = __webpack_require__(5751);
-// EXTERNAL MODULE: ./src/effects/acEffects.js
-var acEffects = __webpack_require__(2877);
-;// CONCATENATED MODULE: ./src/parser/features/DDBBaseFeature.js
-
-
-
-
-
-
-
-
-
-class DDBBaseFeature {
-
-  _init() {
-    logger/* default.debug */.Z.debug(`Generating Base Feature ${this.ddbDefinition.name}`);
-  }
-
-  _generateDataStub() {
-    this.data = {
-      _id: foundry.utils.randomID(),
-      name: DDBHelper/* default.getName */.Z.getName(this.ddbData, this.ddbDefinition, this.rawCharacter),
-      type: this.documentType,
-      system: utils/* default.getTemplate */.Z.getTemplate(this.documentType),
-      flags: {
-        ddbimporter: {
-          id: this.ddbDefinition.id,
-          entityTypeId: this.ddbDefinition.entityTypeId,
-          action: this.isAction,
-          componentId: this.ddbDefinition.componentId,
-          componentTypeId: this.ddbDefinition.componentTypeId,
-          originalName: DDBHelper/* default.getName */.Z.getName(this.ddbData, this.ddbDefinition, this.rawCharacter, false),
-          type: this.tagType,
-          isCustomAction: this.ddbDefinition.isCustomAction,
-        },
-        infusions: { infused: false },
-        obsidian: {
-          source: {
-            type: this.tagType,
-          },
-        }
-      },
-    };
-  }
-
-  _prepare() {
-    if (this.ddbDefinition.infusionFlags) {
-      setProperty(this.data, "flags.infusions", this.ddbDefinition.infusionFlags);
-    }
-  }
-
-  constructor({ ddbData, ddbDefinition, type, source, documentType = "feat", rawCharacter = null } = {}) {
-    this.ddbData = ddbData;
-    this.rawCharacter = rawCharacter;
-    this.ddbFeature = ddbDefinition;
-    this.ddbDefinition = ddbDefinition.definition ?? ddbDefinition;
-    this.name = utils/* default.nameString */.Z.nameString(this.ddbDefinition.name);
-    this.type = type;
-    this.source = source;
-    this.isAction = false;
-    this.documentType = documentType;
-    this.tagType = "other";
-    this.data = {};
-    this._init();
-
-    // this._attacksAsFeatures = game.settings.get(SETTINGS.MODULE_ID, "character-update-policy-use-actions-as-features");
-
-    this._generateDataStub();
-    this._prepare();
-    this.data.system.source = this.source;
-  }
-
-  _generateActivation() {
-    if (!this.ddbDefinition.activation) return;
-    const actionType = dictionary/* default.actions.activationTypes.find */.Z.actions.activationTypes.find((type) => type.id === this.ddbDefinition.activation.activationType);
-    const activation = !actionType
-      ? {}
-      : {
-        type: actionType.value,
-        cost: this.ddbDefinition.activation.activationTime || 1,
-        condition: "",
-      };
-    this.data.system.activation = activation;
-  }
-
-  _getClassFeatureDescription() {
-    const componentId = this.ddbDefinition.componentId;
-    const componentTypeId = this.ddbDefinition.componentTypeId;
-
-    const findFeatureKlass = this.ddbData.character.classes
-      .find((cls) => cls.classFeatures.find((feature) =>
-        feature.definition.id == componentId
-        && feature.definition.entityTypeId == componentTypeId
-      ));
-
-    if (findFeatureKlass) {
-      const feature = findFeatureKlass.classFeatures
-        .find((feature) =>
-          feature.definition.id == componentId
-          && feature.definition.entityTypeId == componentTypeId
-        );
-      if (feature) {
-        return (0,DDBTemplateStrings/* default */.ZP)(this.ddbData, this.rawCharacter, feature.definition.description, this.ddbFeature).text;
-      }
-    }
-    return "";
-  }
-
-
-  _getRaceFeatureDescription() {
-    const componentId = this.ddbDefinition.componentId;
-    const componentTypeId = this.ddbDefinition.componentTypeId;
-
-    const feature = this.ddbData.character.race.racialTraits
-      .find((trait) =>
-        trait.definition.id == componentId
-        && trait.definition.entityTypeId == componentTypeId
-      );
-
-    if (feature) {
-      return (0,DDBTemplateStrings/* default */.ZP)(this.ddbData, this.rawCharacter, feature.definition.description, this.ddbFeature).text;
-    }
-    return "";
-
-  }
-
-  static buildFullDescription(main, summary, title) {
-    let result = "";
-
-    if (summary && !utils/* default.stringKindaEqual */.Z.stringKindaEqual(main, summary) && summary.trim() !== "" && main.trim() !== "") {
-      result += summary.trim();
-      result += `
-  <details>
-    <summary>
-      ${title ? title : "More Details"}
-    </summary>
-    <p>
-      ${main.trim()}
-    </p>
-  </details>`;
-    } else if (main.trim() === "") {
-      result += summary.trim();
-    } else {
-      result += main.trim();
-    }
-
-    return result;
-  }
-
-  _generateDescription(forceFull = false) {
-    // for now none actions probably always want the full text
-    const useFullSetting = game.settings.get("ddb-importer", "character-update-policy-use-full-description");
-    const useFull = forceFull || useFullSetting;
-    const chatAdd = game.settings.get("ddb-importer", "add-description-to-chat");
-
-    const rawSnippet = this.ddbDefinition.snippet
-      ? (0,DDBTemplateStrings/* default */.ZP)(this.ddbData, this.rawCharacter, this.ddbDefinition.snippet, this.ddbFeature).text
-      : "";
-
-    const description = this.ddbDefinition.description && this.ddbDefinition.description !== ""
-      ? (0,DDBTemplateStrings/* default */.ZP)(this.ddbData, this.rawCharacter, this.ddbDefinition.description, this.ddbFeature).text
-      : this.type === "race"
-        ? this._getRaceFeatureDescription()
-        : this._getClassFeatureDescription();
-
-    if (!chatAdd) {
-      const snippet = utils/* default.stringKindaEqual */.Z.stringKindaEqual(description, rawSnippet) ? "" : rawSnippet;
-      const fullDescription = DDBBaseFeature.buildFullDescription(description, snippet);
-      const value = !useFull && snippet.trim() !== "" ? snippet : fullDescription;
-
-      this.data.system.description = {
-        value: value,
-        chat: chatAdd ? snippet : "",
-      };
-    } else {
-      const snippet = description !== "" && utils/* default.stringKindaEqual */.Z.stringKindaEqual(description, rawSnippet) ? "" : rawSnippet;
-
-      this.data.system.description = {
-        value: description,
-        chat: snippet,
-      };
-    }
-
-  }
-
-  // eslint-disable-next-line complexity
-  _generateLimitedUse() {
-    if (
-      this.ddbDefinition.limitedUse
-      && (this.ddbDefinition.limitedUse.maxUses || this.ddbDefinition.limitedUse.statModifierUsesId || this.ddbDefinition.limitedUse.useProficiencyBonus)
-    ) {
-      const resetType = dictionary/* default.resets.find */.Z.resets.find((type) => type.id === this.ddbDefinition.limitedUse.resetType);
-      let maxUses = (this.ddbDefinition.limitedUse.maxUses && this.ddbDefinition.limitedUse.maxUses !== -1) ? this.ddbDefinition.limitedUse.maxUses : 0;
-      let intMaxUses = maxUses;
-      const statModifierUsesId = getProperty(this.ddbDefinition, "limitedUse.statModifierUsesId");
-      if (statModifierUsesId) {
-        const ability = dictionary/* default.character.abilities.find */.Z.character.abilities.find((ability) => ability.id === statModifierUsesId).value;
-
-        if (maxUses === 0) {
-          maxUses = `@abilities.${ability}.mod`;
-          intMaxUses = this.rawCharacter.flags.ddbimporter.dndbeyond.effectAbilities[ability].mod;
-        } else {
-          switch (this.ddbDefinition.limitedUse.operator) {
-            case 2:
-              maxUses = `${maxUses} * @abilities.${ability}.mod`;
-              intMaxUses *= this.rawCharacter.flags.ddbimporter.dndbeyond.effectAbilities[ability].mod;
-              break;
-            case 1:
-            default:
-              maxUses = `${maxUses} + @abilities.${ability}.mod`;
-              intMaxUses += this.rawCharacter.flags.ddbimporter.dndbeyond.effectAbilities[ability].mod;
-          }
-        }
-      }
-
-      const useProficiencyBonus = getProperty(this.ddbDefinition, "limitedUse.useProficiencyBonus");
-      if (useProficiencyBonus) {
-        if (maxUses === 0) {
-          maxUses = `@prof`;
-          intMaxUses = this.rawCharacter.flags.ddbimporter.dndbeyond.profBonus;
-        } else {
-          switch (this.ddbDefinition.limitedUse.proficiencyBonusOperator) {
-            case 2:
-              maxUses = `${maxUses} * @prof`;
-              intMaxUses *= this.rawCharacter.flags.ddbimporter.dndbeyond.profBonus;
-              break;
-            case 1:
-            default:
-              maxUses = `${maxUses} + @prof`;
-              intMaxUses += this.rawCharacter.flags.ddbimporter.dndbeyond.profBonus;
-          }
-        }
-      }
-
-      const finalMaxUses = (maxUses)
-        ? Number.isInteger(maxUses)
-          ? parseInt(maxUses)
-          : maxUses
-        : null;
-
-      intMaxUses = Number.isInteger(intMaxUses) ? parseInt(intMaxUses) : null;
-
-      this.data.system.uses = {
-        value: (intMaxUses !== null && intMaxUses != 0) ? intMaxUses - this.ddbDefinition.limitedUse.numberUsed : null,
-        max: (finalMaxUses != 0) ? finalMaxUses : null,
-        per: resetType ? resetType.value : "",
-      };
-    }
-  }
-
-  _generateResourceConsumption() {
-    if (!this.rawCharacter) return;
-
-    Object.keys(this.rawCharacter.system.resources).forEach((resource) => {
-      const detail = this.rawCharacter.system.resources[resource];
-      if (this.ddbDefinition.name === detail.label) {
-        this.data.system.consume = {
-          type: "attribute",
-          target: `resources.${resource}.value`,
-          amount: 1,
-        };
-      }
-    });
-
-    const kiPointRegex = /(?:spend|expend) (\d) ki point/;
-    const match = this.data.system.description.value.match(kiPointRegex);
-    if (match) {
-      setProperty(this.data, "system.consume.amount", match[1]);
-    }
-
-  }
-
-  _generateRange() {
-    if (this.ddbDefinition.range && this.ddbDefinition.range.aoeType && this.ddbDefinition.range.aoeSize) {
-      this.data.system.range = { value: null, units: "self", long: "" };
-      this.data.system.target = {
-        value: this.ddbDefinition.range.aoeSize,
-        type: dictionary/* default.actions.aoeType.find */.Z.actions.aoeType.find((type) => type.id === this.ddbDefinition.range.aoeType)?.value,
-        units: "ft",
-      };
-    } else if (this.ddbDefinition.range && this.ddbDefinition.range.range) {
-      this.data.system.range = {
-        value: this.ddbDefinition.range.range,
-        units: "ft",
-        long: this.ddbDefinition.range.long || "",
-      };
-    } else {
-      this.data.system.range = { value: 5, units: "ft", long: "" };
-    }
-  }
-
-  isMartialArtist(klass = null) {
-    if (klass) {
-      return klass.classFeatures.some((feature) => feature.definition.name === "Martial Arts");
-    } else {
-      return this.ddbData.character.classes.some((k) => k.classFeatures.some((feature) => feature.definition.name === "Martial Arts"));
-    }
-
-  }
-
-  _generateResourceFlags() {
-    const linkItems = game.modules.get("link-item-resource-5e")?.active;
-    const resourceType = getProperty(this.rawCharacter, "flags.ddbimporter.resources.type");
-    if (resourceType !== "disable" && linkItems) {
-      const hasResourceLink = getProperty(this.data.flags, "link-item-resource-5e.resource-link");
-      Object.keys(this.rawCharacter.system.resources).forEach((resource) => {
-        const detail = this.rawCharacter.system.resources[resource];
-        if (this.ddbDefinition.name === detail.label) {
-          setProperty(this.data.flags, "link-item-resource-5e.resource-link", resource);
-          this.rawCharacter.system.resources[resource] = { value: 0, max: 0, sr: false, lr: false, label: "" };
-        } else if (hasResourceLink === resource) {
-          setProperty(this.data.flags, "link-item-resource-5e.resource-link", undefined);
-        }
-      });
-    }
-  }
-
-  _getFeatModifierItem(choice, type) {
-    if (this.ddbDefinition.grantedModifiers) return this.ddbDefinition;
-    let modifierItem = duplicate(this.ddbDefinition);
-    const modifiers = [
-      DDBHelper/* default.getChosenClassModifiers */.Z.getChosenClassModifiers(this.ddbData, { includeExcludedEffects: true, effectOnly: true }),
-      DDBHelper/* default.getModifiers */.Z.getModifiers(this.ddbData, "race", true, true),
-      DDBHelper/* default.getModifiers */.Z.getModifiers(this.ddbData, "background", true, true),
-      DDBHelper/* default.getModifiers */.Z.getModifiers(this.ddbData, "feat", true, true),
-    ].flat();
-
-    if (!modifierItem.definition) modifierItem.definition = {};
-    modifierItem.definition.grantedModifiers = modifiers.filter((mod) => {
-      if (mod.componentId === this.ddbDefinition?.id && mod.componentTypeId === this.ddbDefinition?.entityTypeId)
-        return true;
-      if (choice && this.ddbData.character.options[type]?.length > 0) {
-        // if it is a choice option, try and see if the mod matches
-        const choiceMatch = this.ddbData.character.options[type].some(
-          (option) =>
-            // id match
-            choice.componentId == option.componentId // the choice id matches the option componentID
-            && option.definition.id == mod.componentId // option id and mod id match
-            && (choice.componentTypeId == option.componentTypeId // either the choice componenttype and optiontype match or
-              || choice.componentTypeId == option.definition.entityTypeId) // the choice componentID matches the option definition entitytypeid
-            && option.definition.entityTypeId == mod.componentTypeId // mod componentId matches option entity type id
-            && choice.id == mod.componentId // choice id and mod id match
-        );
-        // console.log(`choiceMatch ${choiceMatch}`);
-        if (choiceMatch) return true;
-      } else if (choice) {
-        // && choice.parentChoiceId
-        const choiceIdSplit = choice.choiceId.split("-").pop();
-        if (mod.id == choiceIdSplit) return true;
-      }
-
-      if (mod.componentId === this.ddbDefinition.id) {
-        if (type === "class") {
-          // logger.log("Class check - feature effect parsing");
-          const classFeatureMatch = this.ddbData.character.classes.some((klass) =>
-            klass.classFeatures.some(
-              (f) => f.definition.entityTypeId == mod.componentTypeId && f.definition.id == this.ddbDefinition.id
-            )
-          );
-          if (classFeatureMatch) return true;
-        } else if (type === "feat") {
-          const featMatch = this.ddbData.character.feats.some(
-            (f) => f.definition.entityTypeId == mod.componentTypeId && f.definition.id == this.ddbDefinition.id
-          );
-          if (featMatch) return true;
-        } else if (type === "race") {
-          const traitMatch = this.ddbData.character.race.racialTraits.some(
-            (t) =>
-              t.definition.entityTypeId == mod.componentTypeId
-              && t.definition.id == mod.componentId
-              && t.definition.id == this.ddbDefinition.id
-          );
-          if (traitMatch) return true;
-        }
-      }
-      return false;
-    });
-    // console.warn("Modifier Item", modifierItem);
-    return modifierItem;
-  }
-
-  _addEffects(choice, type) {
-    // can we apply any effects to this feature
-    const compendiumItem = this.rawCharacter.flags.ddbimporter.compendium;
-    const addCharacterEffects = compendiumItem
-      ? game.settings.get("ddb-importer", "munching-policy-add-effects")
-      : game.settings.get("ddb-importer", "character-update-policy-add-character-effects");
-    const modifierItem = this._getFeatModifierItem(choice, type);
-    if (addCharacterEffects) {
-      this.data = (0,effects/* generateEffects */.K7)(this.ddbData, this.rawCharacter, modifierItem, this.data, compendiumItem, "feat");
-      // console.log(item);
-    } else {
-      this.data = (0,acEffects/* generateBaseACItemEffect */.se)(this.ddbData, this.rawCharacter, modifierItem, this.data, compendiumItem);
-    }
-
-  }
-
-
-  _addCustomValues() {
-    DDBHelper/* default.addCustomValues */.Z.addCustomValues(this.ddbData, this.data);
-  }
-
-  _generateSystemSubType() {
-    if (this.type === "class") {
-      let subType = null;
-      if (this.data.name.startsWith("Ki:")) subType = "Ki";
-      // many ki abilities do not start with ki
-      else if (this.data.name.startsWith("Channel Divinity:")) subType = "channelDivinity";
-      else if (this.data.name.startsWith("Artificer Infusion:")) subType = "artificerInfusion";
-      else if (this.data.name.startsWith("Invocation:")) subType = "eldritchInvocation";
-      else if (this.data.name.startsWith("Fighting Style:")) subType = "fightingStyle";
-      else if (this.data.name.startsWith("Battle Master Maneuver:")) subType = "maneuver";
-      else if (this.data.name.startsWith("Metamagic:")) subType = "metamagic";
-      else if (this.data.name.startsWith("Pact of the")) subType = "pact";
-      else if (this.data.name.startsWith("Rune Carver:")) subType = "rune";
-      else if (this.data.name.startsWith("Psionic Power:")) subType = "psionicPower";
-      else if (this.data.name.startsWith("Hunter's Prey:")) subType = "huntersPrey";
-      else if (this.data.name.startsWith("Defensive Tactics:")) subType = "defensiveTactic";
-      else if (this.data.name.startsWith("Superior Hunter's Defense:")) subType = "superiorHuntersDefense";
-      else if (this.data.name.startsWith("Arcane Shot Options:")) subType = "arcaneShot";
-      else if (this.data.name.startsWith("Elemental Disciplines:")) subType = "elementalDiscipline";
-      // missing: Arcane Shot : arcaneShot
-      // missing: multiattack
-
-      if (subType) setProperty(this.data, "system.type.subtype", subType);
-    }
-  }
-
-  _generateSystemType() {
-    setProperty(this.data, "system.type.value", this.type);
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  build() {
-    // override this feature
-    return false;
-  }
-
-}
-
-;// CONCATENATED MODULE: ./src/parser/features/DDBAction.js
-
-
-
-
-
-
-
-
-class DDBAction extends DDBBaseFeature {
-
-  static LEVEL_SCALE_EXCLUSION = [
-    "Fire Rune",
-    "Cloud Rune",
-    "Stone Rune",
-    "Frost Rune",
-    "Hill Rune",
-    "Storm Rune",
-    "Drake Companion: Summon",
-    "Drake Companion: Command",
-    "Drake Companion",
-  ];
-
-  static LEVEL_SCALE_INFUSIONS = [
-    "Unarmed Strike",
-    "Arms of the Astral Self (WIS)",
-    "Arms of the Astral Self (DEX)",
-    "Arms of the Astral Self (DEX/STR)",
-    "Body of the Astral Self",
-    "Starry Form: Archer",
-    "Sneak Attack",
-  ];
-
-  _init() {
-    this.isAction = true;
-    logger/* default.debug */.Z.debug(`Generating Action ${this.ddbDefinition.name}`);
-  }
-
-  _prepare() {
-    if (this.ddbDefinition.infusionFlags) {
-      setProperty(this.data, "flags.infusions", this.ddbDefinition.infusionFlags);
-    }
-
-    this._actionType = {
-      class: this.ddbData.character.actions.class
-        .filter((ddbAction) => DDBHelper/* default.findClassByFeatureId */.Z.findClassByFeatureId(this.ddbData, ddbAction.componentId))
-        .find((ddbAction) => {
-          const name = DDBHelper/* default.getName */.Z.getName(this.ddbData, ddbAction, this.rawCharacter);
-          return name === this.data.name;
-        }),
-      race: this.ddbData.character.actions.race
-        .some((ddbAction) => {
-          const name = DDBHelper/* default.getName */.Z.getName(this.ddbData, ddbAction, this.rawCharacter);
-          return name === this.data.name;
-        }),
-      feat: this.ddbData.character.actions.feat
-        .some((ddbAction) => {
-          const name = DDBHelper/* default.getName */.Z.getName(this.ddbData, ddbAction, this.rawCharacter);
-          return name === this.data.name;
-        }),
-    };
-  }
-
-  displayAsAttack() {
-    const customDisplay = this.rawCharacter
-      ? DDBHelper/* default.getCustomValueFromCharacter */.Z.getCustomValueFromCharacter(this.ddbDefinition, this.rawCharacter, 16)
-      : DDBHelper/* default.getCustomValue */.Z.getCustomValue(this.ddbDefinition, this.ddbData, 16);
-    if (typeof customDisplay == "boolean") {
-      return customDisplay;
-    } else if (hasProperty(this.ddbDefinition, "displayAsAttack")) {
-      return this.ddbDefinition.displayAsAttack;
-    } else {
-      return false;
-    }
-  }
-
-  build() {
-    try {
-      this._generateSystemType();
-      this._generateSystemSubType();
-      this._generateActivation();
-      this._generateDescription();
-      this._generateLimitedUse();
-      this._generateResourceConsumption();
-      this._generateRange();
-      this._generateAttackType();
-
-      if (this.data.system.damage.parts.length === 0) {
-        logger/* default.debug */.Z.debug("Running level scale parser");
-        this._generateLevelScaleDice();
-      }
-
-      this._generateFlagHints();
-      this._generateResourceFlags();
-
-      this._addEffects();
-      this._addCustomValues();
-    } catch (err) {
-      logger/* default.warn */.Z.warn(
-        `Unable to Generate Action: ${this.name}, please log a bug report. Err: ${err.message}`,
-        "extension"
-      );
-      logger/* default.error */.Z.error("Error", err);
-    }
-  }
-
-  _generateSystemType(typeNudge = null) {
-    // if (this.documentType === "weapon") return;
-    if (this.ddbData.character.actions.class.some((a) =>
-      a.name === this.ddbDefinition.name
-      || (hasProperty(a, "definition.name") && a.definition.name === this.ddbDefinition.name)
-    )) {
-      this.data.system.type.value = "class";
-    } else if (this.ddbData.character.actions.race.some((a) =>
-      a.name === this.ddbDefinition.name
-      || (hasProperty(a, "definition.name") && a.definition.name === this.ddbDefinition.name)
-    )) {
-      this.data.system.type.value = "race";
-    } else if (this.ddbData.character.actions.feat.some((a) =>
-      a.name === this.ddbDefinition.name
-      || (hasProperty(a, "definition.name") && a.definition.name === this.ddbDefinition.name)
-    )) {
-      this.data.system.type.value = "feat";
-    } else if (typeNudge) {
-      this.data.system.type.value = typeNudge;
-      setProperty(this.data, "flags.ddbimporter.type", typeNudge);
-    }
-  }
-
-  // eslint-disable-next-line complexity
-  _generateDamage() {
-    const damageType = this.ddbDefinition.damageTypeId
-      ? dictionary/* default.actions.damageType.find */.Z.actions.damageType.find((type) => type.id === this.ddbDefinition.damageTypeId).name
-      : null;
-
-    // when the action type is not set to melee or ranged we don't apply the mod to damage
-    const meleeOrRangedAction = this.ddbDefinition.attackTypeRange || this.ddbDefinition.rangeId;
-    const modBonus = (this.ddbDefinition.statId || this.ddbDefinition.abilityModifierStatId) && !this.ddbDefinition.isOffhand && meleeOrRangedAction ? " + @mod" : "";
-    const die = this.ddbDefinition.dice ? this.ddbDefinition.dice : this.ddbDefinition.die ? this.ddbDefinition.die : undefined;
-    // const fixedBonus = die?.fixedValue ? ` + ${die.fixedValue}` : "";
-    const fixedBonus = die?.fixedValue
-      ? (this.ddbDefinition.snippet ?? this.ddbDefinition.description ?? "").includes("{{proficiency#signed}}")
-        ? " + @prof"
-        : ` + ${die.fixedValue}`
-      : "";
-    const globalDamageHints = game.settings.get(settings/* default.MODULE_ID */.Z.MODULE_ID, "use-damage-hints");
-    const scaleValueLink = DDBHelper/* default.getScaleValueString */.Z.getScaleValueString(this.ddbData, this.ddbDefinition).value;
-    const excludedScale = DDBAction.LEVEL_SCALE_EXCLUSION.includes(this.data.name);
-    const useScaleValueLink = !excludedScale && scaleValueLink && scaleValueLink !== "{{scalevalue-unknown}}";
-
-    if (die || useScaleValueLink) {
-      const damageTag = (globalDamageHints && damageType) ? `[${damageType}]` : "";
-      if (useScaleValueLink) {
-        this.data.system.damage = {
-          parts: [[`${scaleValueLink}${damageTag}${modBonus}${fixedBonus}`, damageType]],
-          versatile: "",
-        };
-      } else if (die.diceString) {
-        const profBonus = CONFIG.DDB.levelProficiencyBonuses.find((b) => b.level === this.ddbData.character.classes.reduce((p, c) => p + c.level, 0))?.bonus;
-        const replaceProf = this.ddbDefinition.snippet?.includes("{{proficiency#signed}}")
-          && Number.parseInt(die.fixedValue) === Number.parseInt(profBonus);
-        const diceString = replaceProf
-          ? die.diceString.replace(`+ ${profBonus}`, "")
-          : die.diceString;
-        const mods = replaceProf ? `${modBonus} + @prof` : modBonus;
-        const damageString = utils/* default.parseDiceString */.Z.parseDiceString(diceString, mods, damageTag).diceString;
-        this.data.system.damage = {
-          parts: [[damageString, damageType]],
-          versatile: "",
-        };
-      } else if (fixedBonus) {
-        this.data.system.damage = {
-          parts: [[fixedBonus + modBonus, damageType]],
-          versatile: "",
-        };
-      }
-    }
-  }
-
-  _generateSaveAttack() {
-    this.data.system.actionType = "save";
-    this._generateDamage();
-
-    const fixedDC = this.ddbDefinition.fixedSaveDc ? this.ddbDefinition.fixedSaveDc : null;
-    const scaling = fixedDC ? "flat" : (this.ddbDefinition.abilityModifierStatId) ? dictionary/* default.character.abilities.find */.Z.character.abilities.find((stat) => stat.id === this.ddbDefinition.abilityModifierStatId).value : "spell";
-
-    const saveAbility = (this.ddbDefinition.saveStatId)
-      ? dictionary/* default.character.abilities.find */.Z.character.abilities.find((stat) => stat.id === this.ddbDefinition.saveStatId).value
-      : "";
-
-    this.data.system.save = {
-      ability: saveAbility,
-      dc: fixedDC,
-      scaling: scaling,
-    };
-    if (this.ddbDefinition.abilityModifierStatId) {
-      this.data.system.ability = dictionary/* default.character.abilities.find */.Z.character.abilities.find((stat) => stat.id === this.ddbDefinition.abilityModifierStatId).value;
-    }
-  }
-
-  _generateMartialArtsDamage() {
-    const damageType = dictionary/* default.actions.damageType.find */.Z.actions.damageType.find((type) => type.id === this.ddbDefinition.damageTypeId).name;
-    const globalDamageHints = game.settings.get("ddb-importer", "use-damage-hints");
-
-    let damageBonus = DDBHelper/* default.filterBaseModifiers */.Z.filterBaseModifiers(this.ddbData, "damage", { subType: "unarmed-attacks" }).reduce((prev, cur) => prev + cur.value, 0);
-    if (damageBonus === 0) {
-      damageBonus = "";
-    } else {
-      damageBonus = ` + ${damageBonus}`;
-    }
-    const actionDie = this.ddbDefinition.dice ? this.ddbDefinition.dice : this.ddbDefinition.die ? this.ddbDefinition.die : undefined;
-
-    // are we dealing with martial arts?
-    if (this.isMartialArtist()) {
-      const dies = this.ddbData.character.classes
-        .filter((klass) => this.isMartialArtist(klass))
-        .map((klass) => {
-          const feature = klass.classFeatures.find((feature) => feature.definition.name === "Martial Arts");
-          const levelScaleDie = feature?.levelScale?.dice ? feature.levelScale.dice : feature?.levelScale.die ? feature.levelScale.die : undefined;
-
-          if (levelScaleDie?.diceString) {
-
-            const scaleValueLink = DDBHelper/* default.getScaleValueLink */.Z.getScaleValueLink(this.ddbData, feature);
-            const scaleString = scaleValueLink && scaleValueLink !== "{{scalevalue-unknown}}"
-              ? scaleValueLink
-              : levelScaleDie.diceString;
-
-            if (actionDie?.diceValue > levelScaleDie.diceValue) {
-              return actionDie.diceString;
-            }
-            return scaleString;
-          } else if (actionDie !== null && actionDie !== undefined) {
-            // On some races bite is considered a martial art, damage
-            // is different and on the action itself
-            return actionDie.diceString;
-          } else {
-            return "1";
-          }
-        });
-      const die = dies.length > 0 ? dies[0] : "";
-      const damageTag = (globalDamageHints && damageType) ? `[${damageType}]` : "";
-      const damageString = die.includes("@")
-        ? `${die}${damageTag}${damageBonus} + @mod`
-        : utils/* default.parseDiceString */.Z.parseDiceString(die, `${damageBonus} + @mod`, damageTag).diceString;
-
-      // set the weapon damage
-      this.data.system.damage = {
-        parts: [[damageString, damageType]],
-        versatile: "",
-      };
-    } else if (actionDie !== null && actionDie !== undefined) {
-      // The Lizardfolk jaws have a different base damage, its' detailed in
-      // dice so lets capture that for actions if it exists
-      const damageTag = (globalDamageHints && damageType) ? `[${damageType}]` : "";
-      const damageString = utils/* default.parseDiceString */.Z.parseDiceString(actionDie.diceString, `${damageBonus} + @mod`, damageTag).diceString;
-      this.data.system.damage = {
-        parts: [[damageString, damageType]],
-        versatile: "",
-      };
-    } else {
-      // default to basics
-      this.data.system.damage = {
-        parts: [[`1${damageBonus} + @mod`, damageType]],
-        versatile: "",
-      };
-    }
-  }
-
-  _calculateActionAttackAbilities() {
-    let defaultAbility = this.ddbDefinition.abilityModifierStatId
-      ? dictionary/* default.character.abilities.find */.Z.character.abilities.find(
-        (stat) => stat.id === this.ddbDefinition.abilityModifierStatId
-      ).value
-      : "";
-
-    if (this.ddbDefinition.abilityModifierStatId
-      && !([1, 2].includes(this.ddbDefinition.abilityModifierStatId) && this.ddbDefinition.isMartialArts)
-    ) {
-      this.data.system.ability = defaultAbility;
-    } else if (this.ddbDefinition.isMartialArts) {
-      this.data.system.ability
-        = this.ddbDefinition.isMartialArts && this.isMartialArtist()
-          ? this.rawCharacter.flags.ddbimporter.dndbeyond.effectAbilities.dex.value >= this.rawCharacter.flags.ddbimporter.dndbeyond.effectAbilities.str.value
-            ? "dex"
-            : "str"
-          : defaultAbility !== "" ? defaultAbility : "str";
-    } else {
-      this.data.system.ability = "";
-    }
-    if (this.ddbDefinition.isMartialArts) {
-      this._generateMartialArtsDamage();
-      this.data.system.attackBonus = DDBHelper/* default.filterBaseModifiers */.Z.filterBaseModifiers(this.ddbData, "bonus", { subType: "unarmed-attacks" }).reduce((prev, cur) => prev + cur.value, 0);
-    } else {
-      this._generateDamage();
-    }
-    return this.data;
-  }
-
-
-  _generateAttackType() {
-    // lets see if we have a save stat for things like Dragon born Breath Weapon
-    if (typeof this.ddbDefinition.saveStatId === "number") {
-      this._generateSaveAttack();
-    } else if (this.ddbDefinition.actionType === 1) {
-      if (this.ddbDefinition.attackTypeRange === 2) {
-        this.data.system.actionType = "rwak";
-      } else {
-        this.data.system.actionType = "mwak";
-      }
-      this._calculateActionAttackAbilities();
-    } else {
-      if (this.ddbDefinition.rangeId && this.ddbDefinition.rangeId === 1) {
-        this.data.system.actionType = "mwak";
-      } else if (this.ddbDefinition.rangeId && this.ddbDefinition.rangeId === 2) {
-        this.data.system.actionType = "rwak";
-      } else {
-        this.data.system.actionType = "other";
-      }
-      this._calculateActionAttackAbilities();
-    }
-  }
-
-  /**
-   * Some features have actions that use dice and mods that are defined on the character class feature
-   * this attempts to parse out the damage dice and any ability modifier.
-   * This relies on the parsing of templateStrings for the ability modifier detection.
-   */
-  _generateLevelScaleDice(useScale = true) {
-    if (useScale) return;
-    const excludedScale = DDBAction.LEVEL_SCALE_EXCLUSION.includes(this.ddbDefinition.name);
-    const parts = this.ddbData.character.classes
-      .filter((cls) => cls.classFeatures.some((feature) =>
-        feature.definition.id == this.ddbDefinition.componentId
-        && feature.definition.entityTypeId == this.ddbDefinition.componentTypeId
-        && feature.levelScale?.dice?.diceString
-      ))
-      .map((cls) => {
-        const feature = cls.classFeatures.find((feature) =>
-          feature.definition.id == this.ddbDefinition.componentId
-          && feature.definition.entityTypeId == this.ddbDefinition.componentTypeId
-        );
-        const parsedString = this.rawCharacter.flags.ddbimporter.dndbeyond.templateStrings.find((templateString) =>
-          templateString.id == this.ddbDefinition.id
-          && templateString.entityTypeId == this.ddbDefinition.entityTypeId
-        );
-        const die = feature.levelScale.dice ? feature.levelScale.dice : feature.levelScale.die ? feature.levelScale.die : undefined;
-        const scaleValueLink = DDBHelper/* default.getScaleValueString */.Z.getScaleValueString(this.ddbData, this.ddbDefinition).value;
-        let part = useScale && !excludedScale && scaleValueLink && scaleValueLink !== "{{scalevalue-unknown}}"
-          ? scaleValueLink
-          : die.diceString;
-        if (parsedString) {
-          const modifier = parsedString.definitions.find((definition) => definition.type === "modifier");
-          if (modifier) {
-            this.data.system.ability = modifier.subType;
-            part = `${part} + @mod`;
-          }
-        }
-        return [part, ""];
-      });
-
-    if (parts.length > 0 && useScale) {
-      this.data.system.damage.parts = parts;
-    } else if (parts.length > 0 && !DDBAction.LEVEL_SCALE_INFUSIONS.includes(this.ddbDefinition.name)) {
-      const combinedParts = hasProperty(this.data, "data.damage.parts") && this.data.system.damage.parts.length > 0
-        ? this.data.system.damage.parts.concat(parts)
-        : parts;
-      this.data.system.damage = {
-        parts: combinedParts,
-        versatile: "",
-      };
-    }
-  }
-
-  _generateWeaponType() {
-    if (this.documentType === "weapon") {
-      const entry = dictionary/* default.actions.attackTypes.find */.Z.actions.attackTypes.find((type) => type.attackSubtype === this.ddbDefinition.attackSubtype);
-      const range = dictionary/* default.weapon.weaponRange.find */.Z.weapon.weaponRange.find((type) => type.attackType === this.ddbDefinition.attackTypeRange);
-      this.data.system.type.value = entry
-        ? entry.value
-        : range
-          ? `simple${range.value}`
-          : "simpleM";
-    }
-  }
-
-  _generateProperties() {
-
-    const kiEmpowered = this.ddbData.character.classes
-      // is a martial artist
-      .some((cls) =>
-        cls.classFeatures.some((feature) =>
-          feature.definition.name === "Ki-Empowered Strikes"
-          && cls.level >= feature.definition.requiredLevel
-        ));
-
-    if (kiEmpowered && getProperty(this.data, "flags.ddbimporter.originalName") == "Unarmed Strike") {
-      setProperty(this.data, "system.properties.mgc", true);
-    }
-
-  }
-
-  _generateFlagHints() {
-    // obsidian and klass names (used in effect enrichment)
-    if (this._actionType.class) {
-      const klass = DDBHelper/* default.findClassByFeatureId */.Z.findClassByFeatureId(this.ddbData, this._actionType.class.componentId);
-      setProperty(this.data.flags, "obsidian.source.type", "class");
-      setProperty(this.data.flags, "ddbimporter.type", "class");
-      setProperty(this.data.flags, "obsidian.source.text", klass.definition.name);
-      setProperty(this.data.flags, "ddbimporter.class", klass.definition.name);
-      const subClassName = hasProperty(klass, "subclassDefinition.name") ? klass.subclassDefinition.name : undefined;
-      setProperty(this.data.flags, "ddbimporter.subclass", subClassName);
-    } else if (this._actionType.race) {
-      setProperty(this.data.flags, "obsidian.source.type", "race");
-      setProperty(this.data.flags, "ddbimporter.type", "race");
-    } else if (this._actionType.feat) {
-      setProperty(this.data.flags, "obsidian.source.type", "feat");
-      setProperty(this.data.flags, "ddbimporter.type", "feat");
-    }
-
-    // scaling details
-    const klassActionComponent = DDBHelper/* default.findComponentByComponentId */.Z.findComponentByComponentId(this.ddbData, this.ddbDefinition.id)
-      ?? DDBHelper/* default.findComponentByComponentId */.Z.findComponentByComponentId(this.ddbData, this.ddbDefinition.componentId);
-    if (klassActionComponent) {
-      setProperty(this.data.flags, "ddbimporter.dndbeyond.levelScale", klassActionComponent.levelScale);
-      setProperty(this.data.flags, "ddbimporter.dndbeyond.levelScales", klassActionComponent.definition?.levelScales);
-      setProperty(this.data.flags, "ddbimporter.dndbeyond.limitedUse", klassActionComponent.definition?.limitedUse);
-    }
-  }
-
-}
-
-;// CONCATENATED MODULE: ./src/parser/features/DDBAttackAction.js
-
-
-
-
-class DDBAttackAction extends DDBAction {
-
-  static EXCLUDED_ACTION_FEATURES = ["Unarmed Strike"];
-
-  _init() {
-    this.isAction = true;
-    this.documentType = !DDBAttackAction.EXCLUDED_ACTION_FEATURES.includes(this.ddbDefinition.name)
-      ? "feat"
-      : "weapon";
-    logger/* default.debug */.Z.debug(`Generating Attack Action ${this.ddbDefinition.name}`);
-  }
-
-  build() {
-    try {
-      if (this.ddbData.isMartialArts) {
-        setProperty(this.data, "flags.ddbimporter.dndbeyond.type", "Martial Arts");
-      };
-      this.data.system.proficient = this.ddbDefinition.isProficient ? 1 : 0;
-      this._generateDescription();
-      this.data.system.equipped = true;
-      this.data.system.rarity = "";
-      this.data.system.identified = true;
-      this._generateActivation();
-      this._generateRange();
-      this._generateAttackType();
-      this._generateWeaponType();
-      this._generateLimitedUse();
-      this._generateResourceConsumption();
-      this._generateProperties();
-      this._generateSystemType(this.type);
-      this._generateSystemSubType();
-
-      if (["line", "cone"].includes(this.data.system.target?.type)) {
-        setProperty(this.data, "system.duration.units", "inst");
-      }
-
-      this._generateFlagHints();
-      this._generateResourceFlags();
-      this._addEffects();
-      this._generateLevelScaleDice();
-
-      this._addCustomValues();
-
-    } catch (err) {
-      logger/* default.warn */.Z.warn(
-        `Unable to Generate Attack Action: ${this.name}, please log a bug report. Err: ${err.message}`,
-        "extension"
-      );
-      logger/* default.error */.Z.error("Error", err);
-    }
-  }
-
-}
-
-;// CONCATENATED MODULE: ./src/parser/features/DDBFeature.js
-
-
-
-
-
-
-
-
-
-
-class DDBFeature extends DDBBaseFeature {
-
-  static FORCE_UNARMED = ["Trunk", "Claws"];
-
-  static DOC_TYPE = {
-    class: "feat", // class feature
-    subclass: "feat", // subclass feature
-    race: "feat",
-    background: "background",
-    feat: "feat",
-  };
-
-  _init() {
-    this.documentType = DDBFeature.DOC_TYPE[this.type];
-    this.tagType = this.type;
-    logger/* default.debug */.Z.debug(`Generating Feature ${this.ddbDefinition.name}`);
-    this._class = this.ddbData.character.classes.find((klass) =>
-      (this.ddbDefinition.classId
-        && (klass.definition.id === this.ddbDefinition.classId || klass.subclassDefinition?.id === this.ddbDefinition.classId))
-      || (this.ddbDefinition.className && klass.definition.name === this.ddbDefinition.className
-        && ((!this.ddbDefinition.subclassName || this.ddbDefinition.subclassName === "")
-          || (this.ddbDefinition.subclassName && klass.subclassDefinition?.name === this.ddbDefinition.subclassName))
-      )
-    );
-    this._choices = DDBHelper/* default.getChoices */.Z.getChoices(this.ddbData, this.type, this.ddbDefinition);
-    this.isChoiceFeature = this._choices.length > 0;
-    this.include = !this.isChoiceFeature;
-    this.hasRequiredLevel = !this._class || (this._class && this._class.level >= this.ddbDefinition.requiredLevel);
-
-    this.advancementHelper = new AdvancementHelper/* default */.Z({
-      ddbData: this.ddbData,
-      type: this.type,
-      noMods: false,
-    });
-  }
-
-  _generateDataStub() {
-    this.data = {
-      _id: foundry.utils.randomID(),
-      name: utils/* default.nameString */.Z.nameString(this.ddbDefinition.name),
-      type: this.documentType,
-      system: utils/* default.getTemplate */.Z.getTemplate(this.documentType),
-      flags: {
-        ddbimporter: {
-          id: this.ddbDefinition.id,
-          type: this.tagType,
-          entityTypeId: this.ddbDefinition.entityTypeId,
-          dndbeyond: {
-            requiredLevel: this.ddbDefinition.requiredLevel,
-            displayOrder: this.ddbDefinition.displayOrder,
-            featureType: this.ddbDefinition.featureType,
-            classId: this.ddbDefinition.classId,
-            entityId: this.ddbDefinition.entityId,
-            entityRaceId: this.ddbDefinition.entityRaceId,
-            entityType: this.ddbDefinition.entityType,
-          },
-        },
-        obsidian: {
-          source: {
-            type: this.tagType,
-          },
-        },
-      }
-    };
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  _prepare() {
-    // override this feature
-  }
-
-  _buildUnarmed() {
-    const override = {
-      name: this.data.name,
-      description: this.ddbDefinition.description,
-      snippet: this.ddbDefinition.snippet,
-      id: this.ddbDefinition.id,
-      entityTypeId: this.ddbDefinition.entityTypeId,
-      componentId: this.ddbDefinition.componentId,
-      componentTypeId: this.ddbDefinition.componentTypeId,
-    };
-
-    const unarmedStrikeMock = deepClone(CONFIG.DDB.naturalActions[0]);
-    unarmedStrikeMock.displayAsAttack = true;
-    const strikeMock = Object.assign(unarmedStrikeMock, override);
-
-    const ddbAttackAction = new DDBAttackAction({
-      ddbData: this.ddbData,
-      ddbDefinition: strikeMock,
-      rawCharacter: this.rawCharacter,
-      type: this.type,
-      documentType: "weapon",
-    });
-    ddbAttackAction.build();
-
-    this.data = ddbAttackAction.data;
-  }
-
-  _buildBasic() {
-    this._generateSystemType();
-    this._generateSystemSubType();
-
-    // this._generateLimitedUse();
-    // this._generateRange();
-    // this._generateResourceConsumption();
-    // this._generateActivation();
-    // this._generateLevelScaleDice();
-
-    this.data.system.source = DDBHelper/* default.parseSource */.Z.parseSource(this.ddbDefinition);
-
-    this._generateDescription(true);
-    this._addEffects(undefined, this.type);
-
-    // this._generateFlagHints();
-    // this._generateResourceFlags();
-    // this._addCustomValues();
-  }
-
-  async _generateFeatureAdvancements() {
-    // STUB
-    logger/* default.info */.Z.info(`Generating feature advancements for ${this.ddbDefinition.name} are not yet supported`);
-  }
-
-  _generateSkillAdvancements() {
-    const mods = this.advancementHelper.noMods
-      ? []
-      : DDBHelper/* default.getModifiers */.Z.getModifiers(this.ddbData, this.type);
-    const skillExplicitMods = mods.filter((mod) =>
-      mod.type === "proficiency"
-      && dictionary/* default.character.skills.map */.Z.character.skills.map((s) => s.subType).includes(mod.subType)
-    );
-    const advancement = this.advancementHelper.getSkillAdvancement(skillExplicitMods, this.ddbDefinition, undefined, 0);
-
-    if (advancement) this.data.system.advancement.push(advancement.toObject());
-  }
-
-  _generateLanguageAdvancements() {
-    const mods = this.advancementHelper.noMods
-      ? []
-      : DDBHelper/* default.getModifiers */.Z.getModifiers(this.ddbData, this.type);
-
-    const advancement = this.advancementHelper.getLanguageAdvancement(mods, this.ddbDefinition, 0);
-    if (advancement) this.data.system.advancement.push(advancement.toObject());
-  }
-
-  _generateToolAdvancements() {
-    const mods = this.advancementHelper.noMods
-      ? []
-      : DDBHelper/* default.getModifiers */.Z.getModifiers(this.ddbData, this.type);
-    const advancement = this.advancementHelper.getToolAdvancement(mods, this.ddbDefinition, 0);
-    if (advancement) this.data.system.advancement.push(advancement.toObject());
-  }
-
-  _generateSkillOrLanguageAdvancements() {
-    // STUB
-    logger/* default.info */.Z.info(`Generating skill or language advancements for ${this.ddbDefinition.name} are not yet supported`);
-  }
-
-  async generateAdvancements() {
-    await this._generateFeatureAdvancements();
-    this._generateSkillAdvancements();
-    this._generateLanguageAdvancements();
-    this._generateToolAdvancements();
-    // FUTURE: Equipment?  needs better handling in Foundry
-    this._generateSkillOrLanguageAdvancements();
-  }
-
-  async buildBackgroundFeatAdvancements() {
-    const featIds = getProperty(this.ddbData.character, "background.definition.featList.featIds") ?? [];
-    if (featIds.length === 0) return;
-
-    const advancement = new game.dnd5e.documents.advancement.ItemGrantAdvancement();
-    const indexFilter = {
-      fields: [
-        "name",
-        "flags.ddbimporter.featId",
-      ],
-    };
-    const compendium = CompendiumHelper/* default.getCompendiumType */.Z.getCompendiumType("feats");
-    await compendium.getIndex(indexFilter);
-
-    const feats = compendium.index.filter((f) => featIds.includes(getProperty(f, "flags.ddbimporter.featId")));
-
-    advancement.updateSource({
-      configuration: {
-        items: feats.map((f) => f.uuid),
-      },
-      title: "Feat",
-    });
-    this.data.system.advancement.push(advancement.toObject());
-
-    const advancementLinkData = getProperty(this.data, "flags.ddbimporter.advancementLink") ?? [];
-    const advancementData = {
-      _id: advancement._id,
-      features: {}
-    };
-    advancementData[advancement._id] = {};
-    feats.forEach((f) => {
-      advancementData.features[f.name] = f.uuid;
-    });
-    advancementLinkData.push(advancementData);
-    setProperty(this.data, "flags.ddbimporter.advancementLink", advancementLinkData);
-  }
-
-  _buildBackground() {
-    try {
-      this._generateSystemType();
-      this._generateSystemSubType();
-
-      this.data.system.source = DDBHelper/* default.parseSource */.Z.parseSource(this.ddbDefinition);
-
-      logger/* default.debug */.Z.debug(`Found background ${this.ddbDefinition.name}`);
-      logger/* default.debug */.Z.debug(`Found ${this._choices.map((c) => c.label).join(",")}`);
-
-      this._generateDescription(true);
-      this.data.system.description.value += `<h3>Proficiencies</h3><ul>`;
-      this._choices.forEach((choice) => {
-        this._addEffects(choice, this.type);
-        this.data.system.description.value += `<li>${choice.label}</li>`;
-      });
-      this.data.system.description.value += `</ul>`;
-      this.data.img = "icons/skills/trades/academics-book-study-purple.webp";
-      this.data.name = this.data.name.split("Background: ").pop();
-
-    } catch (err) {
-      logger/* default.warn */.Z.warn(
-        `Unable to Generate Background Feature: ${this.name}, please log a bug report. Err: ${err.message}`,
-        "extension"
-      );
-      logger/* default.error */.Z.error("Error", err);
-    }
-  }
-
-
-  build() {
-    try {
-      if (DDBFeature.FORCE_UNARMED.includes(this.data.name)) {
-        this._buildUnarmed();
-      } else if (this.type === "background") {
-        // work around till background parsing support advancements
-        this.isChoiceFeature = false;
-        this._buildBackground();
-      } else if (this.isChoiceFeature) {
-        logger/* default.debug */.Z.debug(`${this.name} has multiple choices and you  need to pass this instance to DDBChoiceFeature`);
-        //  DDBChoiceFeature.buildChoiceFeatures(this);
-      } else {
-        this._buildBasic();
-      }
-    } catch (err) {
-      logger/* default.warn */.Z.warn(
-        `Unable to Generate Basic Feature: ${this.name}, please log a bug report. Err: ${err.message}`,
-        "extension"
-      );
-      logger/* default.error */.Z.error("Error", err);
-    }
-  }
-
-}
-
+// EXTERNAL MODULE: ./src/parser/features/DDBAction.js
+var DDBAction = __webpack_require__(3164);
+// EXTERNAL MODULE: ./src/parser/features/DDBAttackAction.js
+var DDBAttackAction = __webpack_require__(5345);
+// EXTERNAL MODULE: ./src/parser/features/DDBFeature.js
+var DDBFeature = __webpack_require__(4074);
 ;// CONCATENATED MODULE: ./src/parser/features/DDBChoiceFeature.js
 
 
@@ -32283,7 +31496,7 @@ class DDBFeature extends DDBBaseFeature {
 
 
 
-class DDBChoiceFeature extends DDBFeature {
+class DDBChoiceFeature extends DDBFeature/* default */.Z {
 
   _prepare() {
     this._levelScale = null;
@@ -32453,7 +31666,7 @@ class DDBClassFeatures {
   }
 
   _getFeatures(featureDefinition, type, source, filterByLevel = true) {
-    const feature = new DDBFeature({
+    const feature = new DDBFeature/* default */.Z({
       ddbData: this.ddbData,
       ddbDefinition: featureDefinition,
       rawCharacter: this.rawCharacter,
@@ -32693,7 +31906,7 @@ class DDBFeatures {
 
   async getFeaturesFromDefinition(featDefinition, type) {
     const source = DDBHelper/* default.parseSource */.Z.parseSource(featDefinition);
-    const ddbFeature = new DDBFeature({
+    const ddbFeature = new DDBFeature/* default */.Z({
       ddbData: this.ddbData,
       ddbDefinition: featDefinition,
       rawCharacter: this.rawCharacter,
@@ -32832,6 +32045,26 @@ class DDBFeatures {
     });
   }
 
+  fixAcEffects() {
+    for (const feature of this.parsed) {
+      logger/* default.debug */.Z.debug(`Checking ${feature.name} for AC effects`);
+      for (const effect of (feature.effects ?? [])) {
+        if (
+          !["Natural", "Unarmored Defense", "Custom", "Unarmored"].includes(this.ddbCharacter.armor.results.maxType)
+          && (
+            (effect.changes.length === 2
+            && effect.changes.some((change) => change.key === "system.attributes.ac.formula")
+            && effect.changes.some((change) => change.key === "system.attributes.ac.calc"))
+            || (effect.changes.length === 1
+              && effect.changes.some((change) => change.key === "system.attributes.ac.calc"))
+          )
+        ) {
+          effect.disabled = true;
+        }
+      }
+    }
+  }
+
   async build() {
     await this._buildRacialTraits();
     await this._buildClassFeatures();
@@ -32841,6 +32074,7 @@ class DDBFeatures {
     this._setLevelScales();
 
     await (0,fixes/* fixFeatures */.t)(this.parsed);
+    this.fixAcEffects();
     this.data = await (0,fixes/* addExtraEffects */.f)(this.ddbData, this.parsed, this.rawCharacter);
   }
 }
@@ -32918,7 +32152,7 @@ class CharacterFeatureFactory {
     unarmedStrikeMock.displayAsAttack = true;
     const strikeMock = Object.assign(unarmedStrikeMock, overrides);
 
-    const unarmedStrikeAction = new DDBAttackAction({ ddbData: this.ddbData, ddbDefinition: strikeMock, rawCharacter: this.rawCharacter });
+    const unarmedStrikeAction = new DDBAttackAction/* default */.Z({ ddbData: this.ddbData, ddbDefinition: strikeMock, rawCharacter: this.rawCharacter });
     unarmedStrikeAction.build();
 
     // console.warn(`unarmedStrikeAction for Unarmed strike`, unarmedStrikeAction);
@@ -32953,7 +32187,7 @@ class CharacterFeatureFactory {
       .flat()
       .filter((action) => DDBHelper/* default.displayAsAttack */.Z.displayAsAttack(this.ddbData, action, this.rawCharacter))
       .map((action) => {
-        const ddbAttackAction = new DDBAttackAction({ ddbData: this.ddbData, ddbDefinition: action, rawCharacter: this.rawCharacter, type: action.actionSource });
+        const ddbAttackAction = new DDBAttackAction/* default */.Z({ ddbData: this.ddbData, ddbDefinition: action, rawCharacter: this.rawCharacter, type: action.actionSource });
         ddbAttackAction.build();
 
         // console.warn(`ddbAttackAction for ${action.name}`, ddbAttackAction);
@@ -32993,7 +32227,7 @@ class CharacterFeatureFactory {
       .map((action) => {
         logger/* default.debug */.Z.debug(`Getting Other Action ${action.name}`);
 
-        const ddbAction = new DDBAction({ ddbData: this.ddbData, ddbDefinition: action, rawCharacter: this.rawCharacter });
+        const ddbAction = new DDBAction/* default */.Z({ ddbData: this.ddbData, ddbDefinition: action, rawCharacter: this.rawCharacter });
         ddbAction.build();
         // console.warn(`ddbAction for ${action.name}`, ddbAction);
 
@@ -33225,6 +32459,8 @@ class DDBCharacter {
     this.itemCompendium = CompendiumHelper/* default.getCompendiumType */.Z.getCompendiumType("inventory");
     this.spellCompendium = CompendiumHelper/* default.getCompendiumType */.Z.getCompendiumType("spell");
 
+    this.armor = {};
+
   }
 
   /**
@@ -33236,7 +32472,7 @@ class DDBCharacter {
    * @param {String} url
    */
   static getCharacterId(url) {
-    const ddbNamePattern = /(?:https?:\/\/)?(?:www\.dndbeyond\.com|ddb\.ac)(?:\/profile\/.+)?\/characters\/(\d+)\/?/;
+    const ddbNamePattern = /(?:https?:\/\/)?(?:www\.)?(?:dndbeyond\.com|ddb\.ac)(?:\/profile\/.+)?\/characters\/(\d+)\/?/;
     const matches = url.match(ddbNamePattern);
     return matches ? matches[1] : null;
   }
@@ -34614,9 +33850,7 @@ class DDBMonster {
     this.npc = await CompendiumHelper/* default.existingActorCheck */.Z.existingActorCheck("monster", this.npc);
     this.npc = specialCases(this.npc);
 
-    if (this.addMonsterEffects) {
-      this.npc = await (0,specialMonsters/* monsterFeatureEffectAdjustment */.w1)(this);
-    }
+    this.npc = await (0,specialMonsters/* monsterFeatureEffectAdjustment */.w1)(this, this.addMonsterEffects);
 
     if (this.addChrisPremades) {
       for (let item of this.npc.items) {
@@ -34898,6 +34132,7 @@ class DDBMonsterFactory {
     this.munchNote("");
     this.munchNote(`Fiddling with the SRD data...`, true);
     await itemHandler.srdFiddling();
+    await itemHandler.iconAdditions();
     this.munchNote(`Generating Icon Map..`, true);
     await (0,_muncher_importMonster_js__WEBPACK_IMPORTED_MODULE_8__/* .generateIconMap */ .NM)(itemHandler.documents);
     await (0,_muncher_importMonster_js__WEBPACK_IMPORTED_MODULE_8__/* .useSRDMonsterImages */ .K8)(itemHandler.documents);
@@ -34962,12 +34197,36 @@ class DDBMonsterFactory {
 
 
 
+function htmlToText(html) {
+  // keep html brakes and tabs
+  return html.replace(/<\/td>/g, "\n")
+    .replace(/<\/table>/g, "\n")
+    .replace(/<\/tr>/g, "\n")
+    .replace(/<\/p>/g, "\n")
+    .replace(/<\/div>/g, "\n")
+    .replace(/<\/h>/g, "\n")
+    .replace(/<br>/g, "\n")
+    .replace(/<br( )*\/>/g, "\n")
+    .replace(/<[A-Za-z/][^<>]*>/g, "");
+}
+
 class AdvancementHelper {
 
-  constructor({ ddbData, type, noMods = false }) {
+  constructor({ ddbData, type, dictionary = null, noMods = false }) {
     this.ddbData = ddbData;
     this.type = type;
     this.noMods = noMods;
+    this.dictionary = dictionary;
+  }
+
+  static stripDescription(description) {
+    const descriptionReplaced = description
+      .replaceAll(/<br \/>(?:\s*)*/g, "<br />\n")
+      .replaceAll(/<\/p>(?:\s*)*/g, "</p>\n")
+      .replaceAll(/<\/dt>(?:\s*)*<dt>/g, "</dt>\n<dt>");
+    // console.warn(descriptionReplaced);
+    return htmlToText(descriptionReplaced);
+    // return utils.stripHtml(descriptionReplaced, true);
   }
 
 
@@ -35296,7 +34555,7 @@ class AdvancementHelper {
       title,
       classRestriction,
       configuration: {
-        allowReplacements: false,
+        allowReplacements: true,
       },
       level,
     });
@@ -35369,7 +34628,7 @@ class AdvancementHelper {
     advancement.updateSource({
       title: feature.name !== "Proficiencies" && !feature.name.startsWith("Background:") ? feature.name : "Languages",
       configuration: {
-        allowReplacements: false,
+        allowReplacements: true,
       },
       level: level,
     });
@@ -35438,7 +34697,7 @@ class AdvancementHelper {
     advancement.updateSource({
       title: feature.name !== "Proficiencies" && !feature.name.startsWith("Background:") ? feature.name : "Tool Proficiencies",
       configuration: {
-        allowReplacements: false,
+        allowReplacements: true,
       },
       level: level,
     });
@@ -35460,7 +34719,7 @@ class AdvancementHelper {
     return advancement;
   }
 
-  getArmorAdvancement(mods, feature, level) {
+  getArmorAdvancement(mods, feature, availableToMulticlass, level) {
     const proficiencyMods = _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].filterModifiers */ .Z.filterModifiers(mods, "proficiency");
     const armorMods = proficiencyMods
       .filter((mod) =>
@@ -35501,10 +34760,13 @@ class AdvancementHelper {
 
     if (count === 0 && parsedArmors.grants.length === 0) return null;
 
+    const classRestriction = availableToMulticlass === undefined
+      ? undefined
+      : level > 1 ? "" : availableToMulticlass ? "secondary" : "primary";
+
     const pool = this.noMods || parsedArmors.choices.length > 0 || parsedArmors.grants.length > 0
       ? parsedArmors.choices.map((choice) => `armor:${choice}`)
       : armorsFromMods.map((choice) => `armor:${choice}`);
-
 
     const chosen = this.noMods || chosenArmors.chosen.length > 0
       ? chosenArmors.chosen.map((choice) => `armor:${choice}`)
@@ -35513,6 +34775,7 @@ class AdvancementHelper {
 
     advancement.updateSource({
       title: feature.name !== "Proficiencies" && !feature.name.startsWith("Background:") ? feature.name : "Armor Proficiencies",
+      classRestriction,
       configuration: {
         allowReplacements: false,
       },
@@ -35851,7 +35114,7 @@ class AdvancementHelper {
   static parseHTMLSaves(description) {
     const results = [];
 
-    const textDescription = _lib_utils_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].stripHtml */ .Z.stripHtml(description.replaceAll(/<br \/>(?:\s*)*/g, "<br />\n").replaceAll(/<\/p>(?:\s*)*/g, "</p>\n"), true);
+    const textDescription = AdvancementHelper.stripDescription(description);
 
     // get class saves
     const savingText = textDescription.toLowerCase().split("saving throws:").pop().split("\n")[0].split("The")[0].split(".")[0].split("skills:")[0].trim();
@@ -35876,9 +35139,9 @@ class AdvancementHelper {
       choices: [],
       grants: [],
       number: 0,
-      allowReplacements: false,
+      allowReplacements: true,
     };
-    const textDescription = _lib_utils_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].stripHtml */ .Z.stripHtml(description.replaceAll(/<br \/>(?:\s*)*/g, "<br />\n").replaceAll(/<\/p>(?:\s*)*/g, "</p>\n"), true).replace(/\s/g, " ");
+    const textDescription = AdvancementHelper.stripDescription(description).replace(/\s/g, " ");
 
     // Choose any three e.g. bard
     const anySkillRegex = /Skills:\sChoose any (\w+)(.*)($|\.$|\w+:)/im;
@@ -35894,13 +35157,13 @@ class AdvancementHelper {
     }
 
     // Skill Proficiencies: Nature, Survival
-    const backgroundSkillRegex = /Skill Proficiencies:\s(\w+)(.*)($|\.$|\w+:)/im;
+    const backgroundSkillRegex = /Skill Proficiencies:\s(.*?)($|\.$|\w+:)/im;
     const backgroundMatch = textDescription.match(backgroundSkillRegex);
 
     if (backgroundMatch) {
-      const skills = backgroundMatch[1].replace(",", " and").split(" and ").map((skill) => skill.trim());
+      const skills = backgroundMatch[1].replace(" and ", ",").split(",").map((skill) => skill.trim());
       skills.forEach((grant) => {
-        const dictSkill = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].character.skills.find */ .Z.character.skills.find((skill) => skill.label.toLowerCase() === grant.toLowerCase());
+        const dictSkill = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].character.skills.find */ .Z.character.skills.find((skill) => skill.label.toLowerCase() === grant.toLowerCase().split(" ")[0]);
         if (dictSkill) parsedSkills.grants.push(dictSkill.name);
       });
       return parsedSkills;
@@ -35959,7 +35222,7 @@ class AdvancementHelper {
     const explicitSkillGrantMatch = textDescription.match(explicitSkillGrantRegex);
 
     if (explicitSkillGrantMatch) {
-      const skills = explicitSkillGrantMatch[1].replace(",", " and").split(" and ").map((skill) => skill.trim());
+      const skills = explicitSkillGrantMatch[1].replace(" and ", ",").split(",").map((skill) => skill.trim());
       skills.forEach((grant) => {
         const dictSkill = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].character.skills.find */ .Z.character.skills.find((skill) => skill.label.toLowerCase() === grant.toLowerCase());
         if (dictSkill) parsedSkills.grants.push(dictSkill.name);
@@ -35977,7 +35240,96 @@ class AdvancementHelper {
       choices: [],
       number: 0,
     };
-    const textDescription = _lib_utils_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].stripHtml */ .Z.stripHtml(description.replaceAll(/<br \/>(?:\s*)*/g, "<br />\n").replaceAll(/<\/p>(?:\s*)*/g, "</p>\n"), true);
+    const textDescription = AdvancementHelper.stripDescription(description);
+
+    // Background languages
+    const languagesRegex = /Languages:\s(.*?)($|\.$|\w+:)/im;
+    const languagesMatch = textDescription.match(languagesRegex);
+
+    // Languages: Giant and one other language of your choice
+    // Languages: Any one of your choice
+    // Languages: one of your choice
+    // Languages: One of your choice of Elvish, Gnomish, Goblin, or Sylvan
+    // Languages: Two of your choice
+    if (languagesMatch) {
+      const choiceRegexComplex = /(?:(\w+)?(?: and))?\s?(?:(\w+)(?: other language)*)\sof\syour\schoice(?: of (.*))*/im;
+      const complexMatch = languagesMatch[1].match(choiceRegexComplex);
+      if (complexMatch) {
+        if (complexMatch[1]) {
+          const dictMatch = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].character.languages.find */ .Z.character.languages.find((l) =>
+            l.name.toLowerCase() === complexMatch[1].split(" ")[0].toLowerCase().trim()
+          );
+          if (dictMatch) {
+            const language = dictMatch.advancement ? `${dictMatch.advancement}:${dictMatch.value}` : dictMatch.value;
+            parsedLanguages.grants.push(language);
+          }
+        }
+        if (complexMatch[2]) {
+          const number = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].numbers.find */ .Z.numbers.find((num) => complexMatch[2].toLowerCase().trim() === num.natural);
+          parsedLanguages.number = number ? number.num : 1;
+          if (complexMatch[3]) {
+            const languages = complexMatch[3].replace(" or ", ",").split(",").map((skill) => skill.trim());
+            languages.forEach((choice) => {
+              const dictMatch = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].character.languages.find */ .Z.character.languages.find((l) =>
+                l.name.toLowerCase() === choice.toLowerCase().split(" ")[0]
+              );
+              if (dictMatch) {
+                const language = dictMatch.advancement ? `${dictMatch.advancement}:${dictMatch.value}` : dictMatch.value;
+                parsedLanguages.choices.push(language);
+              }
+            });
+          } else {
+            parsedLanguages.choices = ["*"];
+          }
+        }
+        return parsedLanguages;
+      }
+
+      // Languages: Choose one of Draconic, Goblin, or Vedalken
+      const choiceOfRegex = /choose (\w+)(?: of (.*))*/im;
+      const simpleChoice = textDescription.match(choiceOfRegex);
+      if (simpleChoice) {
+        const number = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].numbers.find */ .Z.numbers.find((num) => simpleChoice[1].toLowerCase().trim() === num.natural);
+        parsedLanguages.number = number ? number.num : 1;
+        if (simpleChoice[2]) {
+          const languages = simpleChoice[2].replace(" or ", ",").split(",").map((skill) => skill.trim());
+          languages.forEach((choice) => {
+            const dictMatch = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].character.languages.find */ .Z.character.languages.find((l) =>
+              l.name.toLowerCase() === choice.toLowerCase().split(" ")[0]
+            );
+            // console.warn("lang check", {
+            //   simple: simpleChoice[2],
+            //   choice,
+            //   languages,
+            //   matchVal: choice.toLowerCase().split(" ")[0],
+            //   dictMatch,
+            // });
+            if (dictMatch) {
+              const language = dictMatch.advancement ? `${dictMatch.advancement}:${dictMatch.value}` : dictMatch.value;
+              parsedLanguages.choices.push(language);
+            }
+          });
+        } else {
+          parsedLanguages.choices = ["*"];
+        }
+
+        return parsedLanguages;
+      }
+
+      // Languages: Draconic or Elven
+      parsedLanguages.number = 1;
+      if (languagesMatch[1]) {
+        const languages = languagesMatch[1].replace(" or ", ",").split(",").map((skill) => skill.trim());
+        languages.forEach((choice) => {
+          const dictMatch = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].character.languages.find */ .Z.character.languages.find((l) => l.name.toLowerCase() === choice.toLowerCase());
+          if (dictMatch) {
+            const language = dictMatch.advancement ? `${dictMatch.advancement}:${dictMatch.value}` : dictMatch.value;
+            parsedLanguages.choices.push(language);
+          }
+        });
+        return parsedLanguages;
+      }
+    }
 
     // you learn one language of your choice.
     // You also learn two languages of your choice.
@@ -36003,7 +35355,7 @@ class AdvancementHelper {
     const speakReadAndWriteMatch = textDescription.match(speakReadAndWriteRegex);
 
     if (speakReadAndWriteMatch) {
-      const languages = speakReadAndWriteMatch[1].replace(",", " and").split(" and ").map((skill) => skill.trim());
+      const languages = speakReadAndWriteMatch[1].replace(" and ", ",").split(",").map((skill) => skill.trim());
       parsedLanguages.number = 0;
       languages.forEach((grant) => {
         if (grant.includes("other language") || grant.includes("of your choice")) {
@@ -36026,6 +35378,8 @@ class AdvancementHelper {
     const featMatch = textDescription.match(featMatchRegex);
 
     if (featMatch) {
+      const number = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].numbers.find */ .Z.numbers.find((num) => featMatch[1].toLowerCase() === num.natural);
+      parsedLanguages.number = number ? number.num : 1;
       parsedLanguages.number = 1;
       parsedLanguages.choices = ["*"];
       return parsedLanguages;
@@ -36081,7 +35435,7 @@ class AdvancementHelper {
       number: 0,
     };
 
-    const textDescription = _lib_utils_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].stripHtml */ .Z.stripHtml(description.replaceAll(/<br \/>(?:\s*)*/g, "<br />\n").replaceAll(/<\/p>(?:\s*)*/g, "</p>\n"), true);
+    const textDescription = AdvancementHelper.stripDescription(description);
 
     // Tools: None
     if (textDescription.includes("Tools: None")) return parsedTools;
@@ -36112,6 +35466,7 @@ class AdvancementHelper {
 
     // Tools: Thieves' tools, tinker's tools, one type of artisan's tools of your choice
     // Tools: Herbalism kit
+    // Tool Proficiencies: Disguise Kit, one type of Gaming Set or Musical Instrument
     const toolGrantsRegex = /^(?:Tools|Tool Proficiencies):\s(.*?)($|\.|\w+:)/im;
     const toolGrantsMatch = textDescription.match(toolGrantsRegex);
 
@@ -36123,10 +35478,12 @@ class AdvancementHelper {
         if (toolChoiceMatch) {
           const numberTools = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].numbers.find */ .Z.numbers.find((num) => toolChoiceMatch[1].toLowerCase() === num.natural);
           parsedTools.number = numberTools ? numberTools.num : 1;
-          const toolGroup = AdvancementHelper.getToolGroup(toolChoiceMatch[2]);
-          if (toolGroup) {
-            parsedTools.choices.push(`${toolGroup}:*`);
-          }
+          toolChoiceMatch[2].split(" or ").forEach((toolGroupMatch) => {
+            const toolGroup = AdvancementHelper.getToolGroup(toolGroupMatch.trim());
+            if (toolGroup) {
+              parsedTools.choices.push(`${toolGroup}:*`);
+            }
+          });
         } else {
           const stub = AdvancementHelper.getToolAdvancementValue(toolString);
           if (stub) {
@@ -36157,7 +35514,7 @@ class AdvancementHelper {
     const additionalMatch = textDescription.match(additionalMatchRegex);
 
     if (additionalMatch) {
-      const additionalMatches = additionalMatch[2].replace(",", " and").split(" and ").map((skill) => skill.trim());
+      const additionalMatches = additionalMatch[2].replace(" and ", ",").split(",").map((skill) => skill.trim());
       for (const match of additionalMatches) {
         const toolChoiceRegex = /(\w+) (.*?) of your choice($|\.|\w+:)/i;
         const choiceMatch = textDescription.match(toolChoiceRegex);
@@ -36238,7 +35595,7 @@ class AdvancementHelper {
       grants: [],
       number: 0,
     };
-    const textDescription = _lib_utils_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].stripHtml */ .Z.stripHtml(description.replaceAll(/<br \/>(?:\s*)*/g, "<br />\n").replaceAll(/<\/p>(?:\s*)*/g, "</p>\n"), true);
+    const textDescription = AdvancementHelper.stripDescription(description);
 
     // Armor: None
     if (textDescription.includes("Armor: None")) return parsedArmorProficiencies;
@@ -36253,7 +35610,9 @@ class AdvancementHelper {
       const grantsArray = grantsMatch[1].split(",").map((grant) => grant.trim());
       for (const grant of grantsArray) {
         const stub = AdvancementHelper.getArmorAdvancementValue(grant);
-        if (stub) {
+        if (stub === "all") {
+          parsedArmorProficiencies.grants.push("lgt", "med", "hvy");
+        } else if (stub) {
           parsedArmorProficiencies.grants.push(stub);
         }
       }
@@ -36271,7 +35630,7 @@ class AdvancementHelper {
     const additionalMatch = textDescription.match(additionalMatchRegex);
 
     if (additionalMatch) {
-      const additionalMatches = additionalMatch[2].replace(",", " and").split(" and ").map((m) => m.trim());
+      const additionalMatches = additionalMatch[2].replace(" and ", ",").split(",").map((m) => m.trim());
       for (const grant of additionalMatches) {
         const stub = AdvancementHelper.getArmorAdvancementValue(grant);
         if (stub) {
@@ -36332,7 +35691,7 @@ class AdvancementHelper {
     };
 
 
-    const textDescription = _lib_utils_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].stripHtml */ .Z.stripHtml(description.replaceAll(/<br \/>(?:\s*)*/g, "<br />\n").replaceAll(/<\/p>(?:\s*)*/g, "</p>\n"), true);
+    const textDescription = AdvancementHelper.stripDescription(description);
 
     // Weapons: None
     if (textDescription.includes("Weapons: None")) return parsedWeaponsProficiencies;
@@ -36377,7 +35736,7 @@ class AdvancementHelper {
     const additionalMatch = textDescription.match(additionalMatchRegex);
 
     if (additionalMatch) {
-      const additionalMatches = additionalMatch[2].replace(",", " and").split(" and ").map((skill) => skill.trim());
+      const additionalMatches = additionalMatch[2].replace(" and ", ",").split(",").map((skill) => skill.trim());
       for (const match of additionalMatches) {
         const toolChoiceRegex = /(\w+) (.*?) of your choice($|\.|\w+:)/i;
         const choiceMatch = textDescription.match(toolChoiceRegex);
@@ -36476,7 +35835,7 @@ class AdvancementHelper {
       hint: "",
     };
 
-    const textDescription = _lib_utils_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].stripHtml */ .Z.stripHtml(description.replaceAll(/<br \/>(?:\s*)*/g, "<br />\n").replaceAll(/<\/p>(?:\s*)*/g, "</p>\n"), true).toLowerCase();
+    const textDescription = AdvancementHelper.stripDescription(description).toLowerCase();
 
     // quick and dirty damage matches, 90 % of use cases
     const isObviousDamage = textDescription.includes("damage");
@@ -36501,7 +35860,7 @@ class AdvancementHelper {
       const damageMatch = adjustedText.match(damageRegex);
       if (damageMatch) {
         const additionalMatches = damageMatch[2]
-          .replace(",", " and").split(" and ")
+          .replace(" and ", ",").split(",")
           .map((dmg) => dmg.trim().toLowerCase());
         for (const match of additionalMatches) {
           const conditionKind = damageMatch[1].toLowerCase().trim();
@@ -36548,8 +35907,8 @@ class AdvancementHelper {
       if (immuneMatch) {
         let addPoisonDI = false;
         const additionalMatches = immuneMatch[1]
-          .replace(",", " and")
-          .split(" and ")
+          .replace(" and ", ",")
+          .split(",")
           .map((dmg) => {
             const result = dmg.trim().toLowerCase();
             if (dmg === "poison") {
@@ -36654,7 +36013,7 @@ class AdvancementHelper {
   //     grants: [],
   //     number: 0,
   //   };
-  //   const textDescription = utils.stripHtml(description.replaceAll(/<br \/>(?:\s*)*/g, "<br />\n").replaceAll(/<\/p>(?:\s*)*/g, "</p>\n"), true);
+  //   const textDescription = AdvancementHelper.stripDescription(description);
 
   //   // You start with the following equipment, in addition to the equipment granted by your background:
   //   // any two simple weapons of your choice
@@ -36686,7 +36045,7 @@ class AdvancementHelper {
 /* harmony export */ });
 /* harmony import */ var _dictionary_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(37);
 /* harmony import */ var _lib_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(7669);
-/* harmony import */ var _DDBCharacter_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(5992);
+/* harmony import */ var _DDBCharacter_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(737);
 
 
 
@@ -37905,6 +37264,7 @@ class DDBCompanionFactory {
 
     const itemHandler = new _lib_DDBItemImporter_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .Z("monsters", companionData);
     await itemHandler.srdFiddling();
+    await itemHandler.iconAdditions();
 
     await (0,_muncher_importMonster_js__WEBPACK_IMPORTED_MODULE_4__/* .generateIconMap */ .NM)(itemHandler.documents);
 
@@ -37945,6 +37305,1291 @@ class DDBCompanionFactory {
 
 /***/ }),
 
+/***/ 3164:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "Z": () => (/* binding */ DDBAction)
+/* harmony export */ });
+/* harmony import */ var _dictionary_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(37);
+/* harmony import */ var _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(1438);
+/* harmony import */ var _lib_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(7669);
+/* harmony import */ var _logger_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(5259);
+/* harmony import */ var _settings_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(6451);
+/* harmony import */ var _DDBBaseFeature_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(5025);
+
+
+
+
+
+
+
+
+class DDBAction extends _DDBBaseFeature_js__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .Z {
+
+  static LEVEL_SCALE_EXCLUSION = [
+    "Fire Rune",
+    "Cloud Rune",
+    "Stone Rune",
+    "Frost Rune",
+    "Hill Rune",
+    "Storm Rune",
+    "Drake Companion: Summon",
+    "Drake Companion: Command",
+    "Drake Companion",
+  ];
+
+  static LEVEL_SCALE_INFUSIONS = [
+    "Unarmed Strike",
+    "Arms of the Astral Self (WIS)",
+    "Arms of the Astral Self (DEX)",
+    "Arms of the Astral Self (DEX/STR)",
+    "Body of the Astral Self",
+    "Starry Form: Archer",
+    "Sneak Attack",
+  ];
+
+  _init() {
+    this.isAction = true;
+    _logger_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].debug */ .Z.debug(`Generating Action ${this.ddbDefinition.name}`);
+  }
+
+  _prepare() {
+    if (this.ddbDefinition.infusionFlags) {
+      setProperty(this.data, "flags.infusions", this.ddbDefinition.infusionFlags);
+    }
+
+    this._actionType = {
+      class: this.ddbData.character.actions.class
+        .filter((ddbAction) => _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].findClassByFeatureId */ .Z.findClassByFeatureId(this.ddbData, ddbAction.componentId))
+        .find((ddbAction) => {
+          const name = _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getName */ .Z.getName(this.ddbData, ddbAction, this.rawCharacter);
+          return name === this.data.name;
+        }),
+      race: this.ddbData.character.actions.race
+        .some((ddbAction) => {
+          const name = _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getName */ .Z.getName(this.ddbData, ddbAction, this.rawCharacter);
+          return name === this.data.name;
+        }),
+      feat: this.ddbData.character.actions.feat
+        .some((ddbAction) => {
+          const name = _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getName */ .Z.getName(this.ddbData, ddbAction, this.rawCharacter);
+          return name === this.data.name;
+        }),
+    };
+  }
+
+  displayAsAttack() {
+    const customDisplay = this.rawCharacter
+      ? _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getCustomValueFromCharacter */ .Z.getCustomValueFromCharacter(this.ddbDefinition, this.rawCharacter, 16)
+      : _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getCustomValue */ .Z.getCustomValue(this.ddbDefinition, this.ddbData, 16);
+    if (typeof customDisplay == "boolean") {
+      return customDisplay;
+    } else if (hasProperty(this.ddbDefinition, "displayAsAttack")) {
+      return this.ddbDefinition.displayAsAttack;
+    } else {
+      return false;
+    }
+  }
+
+  build() {
+    try {
+      this._generateSystemType();
+      this._generateSystemSubType();
+      this._generateActivation();
+      this._generateDescription();
+      this._generateLimitedUse();
+      this._generateResourceConsumption();
+      this._generateRange();
+      this._generateAttackType();
+
+      if (this.data.system.damage.parts.length === 0) {
+        _logger_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].debug */ .Z.debug("Running level scale parser");
+        this._generateLevelScaleDice();
+      }
+
+      this._generateFlagHints();
+      this._generateResourceFlags();
+
+      this._addEffects();
+      this._addCustomValues();
+    } catch (err) {
+      _logger_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].warn */ .Z.warn(
+        `Unable to Generate Action: ${this.name}, please log a bug report. Err: ${err.message}`,
+        "extension"
+      );
+      _logger_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].error */ .Z.error("Error", err);
+    }
+  }
+
+  _generateSystemType(typeNudge = null) {
+    // if (this.documentType === "weapon") return;
+    if (this.ddbData.character.actions.class.some((a) =>
+      a.name === this.ddbDefinition.name
+      || (hasProperty(a, "definition.name") && a.definition.name === this.ddbDefinition.name)
+    )) {
+      this.data.system.type.value = "class";
+    } else if (this.ddbData.character.actions.race.some((a) =>
+      a.name === this.ddbDefinition.name
+      || (hasProperty(a, "definition.name") && a.definition.name === this.ddbDefinition.name)
+    )) {
+      this.data.system.type.value = "race";
+    } else if (this.ddbData.character.actions.feat.some((a) =>
+      a.name === this.ddbDefinition.name
+      || (hasProperty(a, "definition.name") && a.definition.name === this.ddbDefinition.name)
+    )) {
+      this.data.system.type.value = "feat";
+    } else if (typeNudge) {
+      this.data.system.type.value = typeNudge;
+      setProperty(this.data, "flags.ddbimporter.type", typeNudge);
+    }
+  }
+
+  // eslint-disable-next-line complexity
+  _generateDamage() {
+    const damageType = this.ddbDefinition.damageTypeId
+      ? _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].actions.damageType.find */ .Z.actions.damageType.find((type) => type.id === this.ddbDefinition.damageTypeId).name
+      : null;
+
+    // when the action type is not set to melee or ranged we don't apply the mod to damage
+    const meleeOrRangedAction = this.ddbDefinition.attackTypeRange || this.ddbDefinition.rangeId;
+    const modBonus = (this.ddbDefinition.statId || this.ddbDefinition.abilityModifierStatId) && !this.ddbDefinition.isOffhand && meleeOrRangedAction ? " + @mod" : "";
+    const die = this.ddbDefinition.dice ? this.ddbDefinition.dice : this.ddbDefinition.die ? this.ddbDefinition.die : undefined;
+    // const fixedBonus = die?.fixedValue ? ` + ${die.fixedValue}` : "";
+    const fixedBonus = die?.fixedValue
+      ? (this.ddbDefinition.snippet ?? this.ddbDefinition.description ?? "").includes("{{proficiency#signed}}")
+        ? " + @prof"
+        : ` + ${die.fixedValue}`
+      : "";
+    const globalDamageHints = game.settings.get(_settings_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].MODULE_ID */ .Z.MODULE_ID, "use-damage-hints");
+    const scaleValueLink = _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getScaleValueString */ .Z.getScaleValueString(this.ddbData, this.ddbDefinition).value;
+    const excludedScale = DDBAction.LEVEL_SCALE_EXCLUSION.includes(this.data.name);
+    const useScaleValueLink = !excludedScale && scaleValueLink && scaleValueLink !== "{{scalevalue-unknown}}";
+
+    if (die || useScaleValueLink) {
+      const damageTag = (globalDamageHints && damageType) ? `[${damageType}]` : "";
+      if (useScaleValueLink) {
+        this.data.system.damage = {
+          parts: [[`${scaleValueLink}${damageTag}${modBonus}${fixedBonus}`, damageType]],
+          versatile: "",
+        };
+      } else if (die.diceString) {
+        const profBonus = CONFIG.DDB.levelProficiencyBonuses.find((b) => b.level === this.ddbData.character.classes.reduce((p, c) => p + c.level, 0))?.bonus;
+        const replaceProf = this.ddbDefinition.snippet?.includes("{{proficiency#signed}}")
+          && Number.parseInt(die.fixedValue) === Number.parseInt(profBonus);
+        const diceString = replaceProf
+          ? die.diceString.replace(`+ ${profBonus}`, "")
+          : die.diceString;
+        const mods = replaceProf ? `${modBonus} + @prof` : modBonus;
+        const damageString = _lib_utils_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].parseDiceString */ .Z.parseDiceString(diceString, mods, damageTag).diceString;
+        this.data.system.damage = {
+          parts: [[damageString, damageType]],
+          versatile: "",
+        };
+      } else if (fixedBonus) {
+        this.data.system.damage = {
+          parts: [[fixedBonus + modBonus, damageType]],
+          versatile: "",
+        };
+      }
+    }
+  }
+
+  _generateSaveAttack() {
+    this.data.system.actionType = "save";
+    this._generateDamage();
+
+    const fixedDC = this.ddbDefinition.fixedSaveDc ? this.ddbDefinition.fixedSaveDc : null;
+    const scaling = fixedDC ? "flat" : (this.ddbDefinition.abilityModifierStatId) ? _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].character.abilities.find */ .Z.character.abilities.find((stat) => stat.id === this.ddbDefinition.abilityModifierStatId).value : "spell";
+
+    const saveAbility = (this.ddbDefinition.saveStatId)
+      ? _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].character.abilities.find */ .Z.character.abilities.find((stat) => stat.id === this.ddbDefinition.saveStatId).value
+      : "";
+
+    this.data.system.save = {
+      ability: saveAbility,
+      dc: fixedDC,
+      scaling: scaling,
+    };
+    if (this.ddbDefinition.abilityModifierStatId) {
+      this.data.system.ability = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].character.abilities.find */ .Z.character.abilities.find((stat) => stat.id === this.ddbDefinition.abilityModifierStatId).value;
+    }
+  }
+
+  _generateMartialArtsDamage() {
+    const damageType = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].actions.damageType.find */ .Z.actions.damageType.find((type) => type.id === this.ddbDefinition.damageTypeId).name;
+    const globalDamageHints = game.settings.get("ddb-importer", "use-damage-hints");
+
+    let damageBonus = _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].filterBaseModifiers */ .Z.filterBaseModifiers(this.ddbData, "damage", { subType: "unarmed-attacks" }).reduce((prev, cur) => prev + cur.value, 0);
+    if (damageBonus === 0) {
+      damageBonus = "";
+    } else {
+      damageBonus = ` + ${damageBonus}`;
+    }
+    const actionDie = this.ddbDefinition.dice ? this.ddbDefinition.dice : this.ddbDefinition.die ? this.ddbDefinition.die : undefined;
+
+    // are we dealing with martial arts?
+    if (this.isMartialArtist()) {
+      const dies = this.ddbData.character.classes
+        .filter((klass) => this.isMartialArtist(klass))
+        .map((klass) => {
+          const feature = klass.classFeatures.find((feature) => feature.definition.name === "Martial Arts");
+          const levelScaleDie = feature?.levelScale?.dice ? feature.levelScale.dice : feature?.levelScale.die ? feature.levelScale.die : undefined;
+
+          if (levelScaleDie?.diceString) {
+
+            const scaleValueLink = _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getScaleValueLink */ .Z.getScaleValueLink(this.ddbData, feature);
+            const scaleString = scaleValueLink && scaleValueLink !== "{{scalevalue-unknown}}"
+              ? scaleValueLink
+              : levelScaleDie.diceString;
+
+            if (actionDie?.diceValue > levelScaleDie.diceValue) {
+              return actionDie.diceString;
+            }
+            return scaleString;
+          } else if (actionDie !== null && actionDie !== undefined) {
+            // On some races bite is considered a martial art, damage
+            // is different and on the action itself
+            return actionDie.diceString;
+          } else {
+            return "1";
+          }
+        });
+      const die = dies.length > 0 ? dies[0] : "";
+      const damageTag = (globalDamageHints && damageType) ? `[${damageType}]` : "";
+      const damageString = die.includes("@")
+        ? `${die}${damageTag}${damageBonus} + @mod`
+        : _lib_utils_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].parseDiceString */ .Z.parseDiceString(die, `${damageBonus} + @mod`, damageTag).diceString;
+
+      // set the weapon damage
+      this.data.system.damage = {
+        parts: [[damageString, damageType]],
+        versatile: "",
+      };
+    } else if (actionDie !== null && actionDie !== undefined) {
+      // The Lizardfolk jaws have a different base damage, its' detailed in
+      // dice so lets capture that for actions if it exists
+      const damageTag = (globalDamageHints && damageType) ? `[${damageType}]` : "";
+      const damageString = _lib_utils_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].parseDiceString */ .Z.parseDiceString(actionDie.diceString, `${damageBonus} + @mod`, damageTag).diceString;
+      this.data.system.damage = {
+        parts: [[damageString, damageType]],
+        versatile: "",
+      };
+    } else {
+      // default to basics
+      this.data.system.damage = {
+        parts: [[`1${damageBonus} + @mod`, damageType]],
+        versatile: "",
+      };
+    }
+  }
+
+  _calculateActionAttackAbilities() {
+    let defaultAbility = this.ddbDefinition.abilityModifierStatId
+      ? _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].character.abilities.find */ .Z.character.abilities.find(
+        (stat) => stat.id === this.ddbDefinition.abilityModifierStatId
+      ).value
+      : "";
+
+    if (this.ddbDefinition.abilityModifierStatId
+      && !([1, 2].includes(this.ddbDefinition.abilityModifierStatId) && this.ddbDefinition.isMartialArts)
+    ) {
+      this.data.system.ability = defaultAbility;
+    } else if (this.ddbDefinition.isMartialArts) {
+      this.data.system.ability
+        = this.ddbDefinition.isMartialArts && this.isMartialArtist()
+          ? this.rawCharacter.flags.ddbimporter.dndbeyond.effectAbilities.dex.value >= this.rawCharacter.flags.ddbimporter.dndbeyond.effectAbilities.str.value
+            ? "dex"
+            : "str"
+          : defaultAbility !== "" ? defaultAbility : "str";
+    } else {
+      this.data.system.ability = "";
+    }
+    if (this.ddbDefinition.isMartialArts) {
+      this._generateMartialArtsDamage();
+      this.data.system.attackBonus = _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].filterBaseModifiers */ .Z.filterBaseModifiers(this.ddbData, "bonus", { subType: "unarmed-attacks" }).reduce((prev, cur) => prev + cur.value, 0);
+    } else {
+      this._generateDamage();
+    }
+    return this.data;
+  }
+
+
+  _generateAttackType() {
+    // lets see if we have a save stat for things like Dragon born Breath Weapon
+    if (typeof this.ddbDefinition.saveStatId === "number") {
+      this._generateSaveAttack();
+    } else if (this.ddbDefinition.actionType === 1) {
+      if (this.ddbDefinition.attackTypeRange === 2) {
+        this.data.system.actionType = "rwak";
+      } else {
+        this.data.system.actionType = "mwak";
+      }
+      this._calculateActionAttackAbilities();
+    } else {
+      if (this.ddbDefinition.rangeId && this.ddbDefinition.rangeId === 1) {
+        this.data.system.actionType = "mwak";
+      } else if (this.ddbDefinition.rangeId && this.ddbDefinition.rangeId === 2) {
+        this.data.system.actionType = "rwak";
+      } else {
+        this.data.system.actionType = "other";
+      }
+      this._calculateActionAttackAbilities();
+    }
+  }
+
+  /**
+   * Some features have actions that use dice and mods that are defined on the character class feature
+   * this attempts to parse out the damage dice and any ability modifier.
+   * This relies on the parsing of templateStrings for the ability modifier detection.
+   */
+  _generateLevelScaleDice(useScale = true) {
+    if (useScale) return;
+    const excludedScale = DDBAction.LEVEL_SCALE_EXCLUSION.includes(this.ddbDefinition.name);
+    const parts = this.ddbData.character.classes
+      .filter((cls) => cls.classFeatures.some((feature) =>
+        feature.definition.id == this.ddbDefinition.componentId
+        && feature.definition.entityTypeId == this.ddbDefinition.componentTypeId
+        && feature.levelScale?.dice?.diceString
+      ))
+      .map((cls) => {
+        const feature = cls.classFeatures.find((feature) =>
+          feature.definition.id == this.ddbDefinition.componentId
+          && feature.definition.entityTypeId == this.ddbDefinition.componentTypeId
+        );
+        const parsedString = this.rawCharacter.flags.ddbimporter.dndbeyond.templateStrings.find((templateString) =>
+          templateString.id == this.ddbDefinition.id
+          && templateString.entityTypeId == this.ddbDefinition.entityTypeId
+        );
+        const die = feature.levelScale.dice ? feature.levelScale.dice : feature.levelScale.die ? feature.levelScale.die : undefined;
+        const scaleValueLink = _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getScaleValueString */ .Z.getScaleValueString(this.ddbData, this.ddbDefinition).value;
+        let part = useScale && !excludedScale && scaleValueLink && scaleValueLink !== "{{scalevalue-unknown}}"
+          ? scaleValueLink
+          : die.diceString;
+        if (parsedString) {
+          const modifier = parsedString.definitions.find((definition) => definition.type === "modifier");
+          if (modifier) {
+            this.data.system.ability = modifier.subType;
+            part = `${part} + @mod`;
+          }
+        }
+        return [part, ""];
+      });
+
+    if (parts.length > 0 && useScale) {
+      this.data.system.damage.parts = parts;
+    } else if (parts.length > 0 && !DDBAction.LEVEL_SCALE_INFUSIONS.includes(this.ddbDefinition.name)) {
+      const combinedParts = hasProperty(this.data, "data.damage.parts") && this.data.system.damage.parts.length > 0
+        ? this.data.system.damage.parts.concat(parts)
+        : parts;
+      this.data.system.damage = {
+        parts: combinedParts,
+        versatile: "",
+      };
+    }
+  }
+
+  _generateWeaponType() {
+    if (this.documentType === "weapon") {
+      const entry = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].actions.attackTypes.find */ .Z.actions.attackTypes.find((type) => type.attackSubtype === this.ddbDefinition.attackSubtype);
+      const range = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].weapon.weaponRange.find */ .Z.weapon.weaponRange.find((type) => type.attackType === this.ddbDefinition.attackTypeRange);
+      this.data.system.type.value = entry
+        ? entry.value
+        : range
+          ? `simple${range.value}`
+          : "simpleM";
+    }
+  }
+
+  _generateProperties() {
+
+    const kiEmpowered = this.ddbData.character.classes
+      // is a martial artist
+      .some((cls) =>
+        cls.classFeatures.some((feature) =>
+          feature.definition.name === "Ki-Empowered Strikes"
+          && cls.level >= feature.definition.requiredLevel
+        ));
+
+    if (kiEmpowered && getProperty(this.data, "flags.ddbimporter.originalName") == "Unarmed Strike") {
+      setProperty(this.data, "system.properties.mgc", true);
+    }
+
+  }
+
+  _generateFlagHints() {
+    // obsidian and klass names (used in effect enrichment)
+    if (this._actionType.class) {
+      const klass = _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].findClassByFeatureId */ .Z.findClassByFeatureId(this.ddbData, this._actionType.class.componentId);
+      setProperty(this.data.flags, "obsidian.source.type", "class");
+      setProperty(this.data.flags, "ddbimporter.type", "class");
+      setProperty(this.data.flags, "obsidian.source.text", klass.definition.name);
+      setProperty(this.data.flags, "ddbimporter.class", klass.definition.name);
+      const subClassName = hasProperty(klass, "subclassDefinition.name") ? klass.subclassDefinition.name : undefined;
+      setProperty(this.data.flags, "ddbimporter.subclass", subClassName);
+    } else if (this._actionType.race) {
+      setProperty(this.data.flags, "obsidian.source.type", "race");
+      setProperty(this.data.flags, "ddbimporter.type", "race");
+    } else if (this._actionType.feat) {
+      setProperty(this.data.flags, "obsidian.source.type", "feat");
+      setProperty(this.data.flags, "ddbimporter.type", "feat");
+    }
+
+    // scaling details
+    const klassActionComponent = _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].findComponentByComponentId */ .Z.findComponentByComponentId(this.ddbData, this.ddbDefinition.id)
+      ?? _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].findComponentByComponentId */ .Z.findComponentByComponentId(this.ddbData, this.ddbDefinition.componentId);
+    if (klassActionComponent) {
+      setProperty(this.data.flags, "ddbimporter.dndbeyond.levelScale", klassActionComponent.levelScale);
+      setProperty(this.data.flags, "ddbimporter.dndbeyond.levelScales", klassActionComponent.definition?.levelScales);
+      setProperty(this.data.flags, "ddbimporter.dndbeyond.limitedUse", klassActionComponent.definition?.limitedUse);
+    }
+  }
+
+}
+
+
+/***/ }),
+
+/***/ 5345:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "Z": () => (/* binding */ DDBAttackAction)
+/* harmony export */ });
+/* harmony import */ var _logger_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5259);
+/* harmony import */ var _DDBAction_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3164);
+
+
+
+
+class DDBAttackAction extends _DDBAction_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"] */ .Z {
+
+  static FORCE_WEAPON_FEATURES = [
+    "Unarmed Strike",
+    "Psychic Blades: Attack (DEX)",
+    "Psychic Blades: Attack (STR)",
+    "Psychic Blades: Bonus Attack (DEX)",
+    "Psychic Blades: Bonus Attack (STR)",
+  ];
+
+  _init() {
+    this.isAction = true;
+    this.documentType = DDBAttackAction.FORCE_WEAPON_FEATURES.includes(this.ddbDefinition.name)
+      ? "weapon"
+      : "feat";
+    _logger_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].debug */ .Z.debug(`Generating Attack Action ${this.ddbDefinition.name}`);
+  }
+
+  build() {
+    try {
+      if (this.ddbData.isMartialArts) {
+        setProperty(this.data, "flags.ddbimporter.dndbeyond.type", "Martial Arts");
+      };
+      this.data.system.proficient = this.ddbDefinition.isProficient ? 1 : 0;
+      this._generateDescription();
+      this.data.system.equipped = true;
+      this.data.system.rarity = "";
+      this.data.system.identified = true;
+      this._generateActivation();
+      this._generateRange();
+      this._generateAttackType();
+      this._generateWeaponType();
+      this._generateLimitedUse();
+      this._generateResourceConsumption();
+      this._generateProperties();
+      this._generateSystemType(this.type);
+      this._generateSystemSubType();
+
+      if (["line", "cone"].includes(this.data.system.target?.type)) {
+        setProperty(this.data, "system.duration.units", "inst");
+      }
+
+      this._generateFlagHints();
+      this._generateResourceFlags();
+      this._addEffects();
+      this._generateLevelScaleDice();
+
+      this._addCustomValues();
+
+    } catch (err) {
+      _logger_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].warn */ .Z.warn(
+        `Unable to Generate Attack Action: ${this.name}, please log a bug report. Err: ${err.message}`,
+        "extension"
+      );
+      _logger_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].error */ .Z.error("Error", err);
+    }
+  }
+
+}
+
+
+/***/ }),
+
+/***/ 5025:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "Z": () => (/* binding */ DDBBaseFeature)
+/* harmony export */ });
+/* harmony import */ var _dictionary_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(37);
+/* harmony import */ var _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(1438);
+/* harmony import */ var _lib_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(7669);
+/* harmony import */ var _logger_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(5259);
+/* harmony import */ var _lib_DDBTemplateStrings_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(258);
+/* harmony import */ var _effects_effects_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(5751);
+/* harmony import */ var _effects_acEffects_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(2877);
+
+
+
+
+
+
+
+
+
+class DDBBaseFeature {
+
+  _init() {
+    _logger_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].debug */ .Z.debug(`Generating Base Feature ${this.ddbDefinition.name}`);
+  }
+
+  _generateDataStub() {
+    this.data = {
+      _id: foundry.utils.randomID(),
+      name: _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getName */ .Z.getName(this.ddbData, this.ddbDefinition, this.rawCharacter),
+      type: this.documentType,
+      system: _lib_utils_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].getTemplate */ .Z.getTemplate(this.documentType),
+      flags: {
+        ddbimporter: {
+          id: this.ddbDefinition.id,
+          entityTypeId: this.ddbDefinition.entityTypeId,
+          action: this.isAction,
+          componentId: this.ddbDefinition.componentId,
+          componentTypeId: this.ddbDefinition.componentTypeId,
+          originalName: _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getName */ .Z.getName(this.ddbData, this.ddbDefinition, this.rawCharacter, false),
+          type: this.tagType,
+          isCustomAction: this.ddbDefinition.isCustomAction,
+        },
+        infusions: { infused: false },
+        obsidian: {
+          source: {
+            type: this.tagType,
+          },
+        }
+      },
+    };
+  }
+
+  _prepare() {
+    if (this.ddbDefinition.infusionFlags) {
+      setProperty(this.data, "flags.infusions", this.ddbDefinition.infusionFlags);
+    }
+  }
+
+  constructor({ ddbData, ddbDefinition, type, source, documentType = "feat", rawCharacter = null, noMods = false } = {}) {
+    this.ddbData = ddbData;
+    this.rawCharacter = rawCharacter;
+    this.ddbFeature = ddbDefinition;
+    this.ddbDefinition = ddbDefinition.definition ?? ddbDefinition;
+    this.name = _lib_utils_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].nameString */ .Z.nameString(this.ddbDefinition.name);
+    this.type = type;
+    this.source = source;
+    this.isAction = false;
+    this.documentType = documentType;
+    this.tagType = "other";
+    this.data = {};
+    this.noMods = noMods;
+    this._init();
+
+    // this._attacksAsFeatures = game.settings.get(SETTINGS.MODULE_ID, "character-update-policy-use-actions-as-features");
+
+    this._generateDataStub();
+    this._prepare();
+    this.data.system.source = this.source;
+  }
+
+  _generateActivation() {
+    if (!this.ddbDefinition.activation) return;
+    const actionType = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].actions.activationTypes.find */ .Z.actions.activationTypes.find((type) => type.id === this.ddbDefinition.activation.activationType);
+    const activation = !actionType
+      ? {}
+      : {
+        type: actionType.value,
+        cost: this.ddbDefinition.activation.activationTime || 1,
+        condition: "",
+      };
+    this.data.system.activation = activation;
+  }
+
+  _getClassFeatureDescription() {
+    if (!this.ddbData) return "";
+    const componentId = this.ddbDefinition.componentId;
+    const componentTypeId = this.ddbDefinition.componentTypeId;
+
+    const findFeatureKlass = this.ddbData.character.classes
+      .find((cls) => cls.classFeatures.find((feature) =>
+        feature.definition.id == componentId
+        && feature.definition.entityTypeId == componentTypeId
+      ));
+
+    if (findFeatureKlass) {
+      const feature = findFeatureKlass.classFeatures
+        .find((feature) =>
+          feature.definition.id == componentId
+          && feature.definition.entityTypeId == componentTypeId
+        );
+      if (feature) {
+        return (0,_lib_DDBTemplateStrings_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(this.ddbData, this.rawCharacter, feature.definition.description, this.ddbFeature).text;
+      }
+    }
+    return "";
+  }
+
+
+  _getRaceFeatureDescription() {
+    const componentId = this.ddbDefinition.componentId;
+    const componentTypeId = this.ddbDefinition.componentTypeId;
+
+    const feature = this.ddbData.character.race.racialTraits
+      .find((trait) =>
+        trait.definition.id == componentId
+        && trait.definition.entityTypeId == componentTypeId
+      );
+
+    if (feature) {
+      return (0,_lib_DDBTemplateStrings_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(this.ddbData, this.rawCharacter, feature.definition.description, this.ddbFeature).text;
+    }
+    return "";
+
+  }
+
+  static buildFullDescription(main, summary, title) {
+    let result = "";
+
+    if (summary && !_lib_utils_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].stringKindaEqual */ .Z.stringKindaEqual(main, summary) && summary.trim() !== "" && main.trim() !== "") {
+      result += summary.trim();
+      result += `
+  <details>
+    <summary>
+      ${title ? title : "More Details"}
+    </summary>
+    <p>
+      ${main.trim()}
+    </p>
+  </details>`;
+    } else if (main.trim() === "") {
+      result += summary.trim();
+    } else {
+      result += main.trim();
+    }
+
+    return result;
+  }
+
+  _generateDescription(forceFull = false) {
+    // for now none actions probably always want the full text
+    const useFullSetting = game.settings.get("ddb-importer", "character-update-policy-use-full-description");
+    const useFull = forceFull || useFullSetting;
+    const chatAdd = game.settings.get("ddb-importer", "add-description-to-chat");
+
+    const rawSnippet = this.ddbDefinition.snippet
+      ? (0,_lib_DDBTemplateStrings_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(this.ddbData, this.rawCharacter, this.ddbDefinition.snippet, this.ddbFeature).text
+      : "";
+
+    const description = this.ddbDefinition.description && this.ddbDefinition.description !== ""
+      ? (0,_lib_DDBTemplateStrings_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(this.ddbData, this.rawCharacter, this.ddbDefinition.description, this.ddbFeature).text
+      : this.type === "race"
+        ? this._getRaceFeatureDescription()
+        : this._getClassFeatureDescription();
+
+    if (!chatAdd) {
+      const snippet = _lib_utils_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].stringKindaEqual */ .Z.stringKindaEqual(description, rawSnippet) ? "" : rawSnippet;
+      const fullDescription = DDBBaseFeature.buildFullDescription(description, snippet);
+      const value = !useFull && snippet.trim() !== "" ? snippet : fullDescription;
+
+      this.data.system.description = {
+        value: value,
+        chat: chatAdd ? snippet : "",
+      };
+    } else {
+      const snippet = description !== "" && _lib_utils_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].stringKindaEqual */ .Z.stringKindaEqual(description, rawSnippet) ? "" : rawSnippet;
+
+      this.data.system.description = {
+        value: description,
+        chat: snippet,
+      };
+    }
+
+  }
+
+  // eslint-disable-next-line complexity
+  _generateLimitedUse() {
+    if (
+      this.ddbDefinition.limitedUse
+      && (this.ddbDefinition.limitedUse.maxUses || this.ddbDefinition.limitedUse.statModifierUsesId || this.ddbDefinition.limitedUse.useProficiencyBonus)
+    ) {
+      const resetType = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].resets.find */ .Z.resets.find((type) => type.id === this.ddbDefinition.limitedUse.resetType);
+      let maxUses = (this.ddbDefinition.limitedUse.maxUses && this.ddbDefinition.limitedUse.maxUses !== -1) ? this.ddbDefinition.limitedUse.maxUses : 0;
+      let intMaxUses = maxUses;
+      const statModifierUsesId = getProperty(this.ddbDefinition, "limitedUse.statModifierUsesId");
+      if (statModifierUsesId) {
+        const ability = _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].character.abilities.find */ .Z.character.abilities.find((ability) => ability.id === statModifierUsesId).value;
+
+        if (maxUses === 0) {
+          maxUses = `@abilities.${ability}.mod`;
+          intMaxUses = this.rawCharacter.flags.ddbimporter.dndbeyond.effectAbilities[ability].mod;
+        } else {
+          switch (this.ddbDefinition.limitedUse.operator) {
+            case 2:
+              maxUses = `${maxUses} * @abilities.${ability}.mod`;
+              intMaxUses *= this.rawCharacter.flags.ddbimporter.dndbeyond.effectAbilities[ability].mod;
+              break;
+            case 1:
+            default:
+              maxUses = `${maxUses} + @abilities.${ability}.mod`;
+              intMaxUses += this.rawCharacter.flags.ddbimporter.dndbeyond.effectAbilities[ability].mod;
+          }
+        }
+      }
+
+      const useProficiencyBonus = getProperty(this.ddbDefinition, "limitedUse.useProficiencyBonus");
+      if (useProficiencyBonus) {
+        if (maxUses === 0) {
+          maxUses = `@prof`;
+          intMaxUses = this.rawCharacter.flags.ddbimporter.dndbeyond.profBonus;
+        } else {
+          switch (this.ddbDefinition.limitedUse.proficiencyBonusOperator) {
+            case 2:
+              maxUses = `${maxUses} * @prof`;
+              intMaxUses *= this.rawCharacter.flags.ddbimporter.dndbeyond.profBonus;
+              break;
+            case 1:
+            default:
+              maxUses = `${maxUses} + @prof`;
+              intMaxUses += this.rawCharacter.flags.ddbimporter.dndbeyond.profBonus;
+          }
+        }
+      }
+
+      const finalMaxUses = (maxUses)
+        ? Number.isInteger(maxUses)
+          ? parseInt(maxUses)
+          : maxUses
+        : null;
+
+      intMaxUses = Number.isInteger(intMaxUses) ? parseInt(intMaxUses) : null;
+
+      this.data.system.uses = {
+        value: (intMaxUses !== null && intMaxUses != 0) ? intMaxUses - this.ddbDefinition.limitedUse.numberUsed : null,
+        max: (finalMaxUses != 0) ? finalMaxUses : null,
+        per: resetType ? resetType.value : "",
+      };
+    }
+  }
+
+  _generateResourceConsumption() {
+    if (!this.rawCharacter) return;
+
+    Object.keys(this.rawCharacter.system.resources).forEach((resource) => {
+      const detail = this.rawCharacter.system.resources[resource];
+      if (this.ddbDefinition.name === detail.label) {
+        this.data.system.consume = {
+          type: "attribute",
+          target: `resources.${resource}.value`,
+          amount: 1,
+        };
+      }
+    });
+
+    const kiPointRegex = /(?:spend|expend) (\d) ki point/;
+    const match = this.data.system.description.value.match(kiPointRegex);
+    if (match) {
+      setProperty(this.data, "system.consume.amount", match[1]);
+    }
+
+  }
+
+  _generateRange() {
+    if (this.ddbDefinition.range && this.ddbDefinition.range.aoeType && this.ddbDefinition.range.aoeSize) {
+      this.data.system.range = { value: null, units: "self", long: "" };
+      this.data.system.target = {
+        value: this.ddbDefinition.range.aoeSize,
+        type: _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].actions.aoeType.find */ .Z.actions.aoeType.find((type) => type.id === this.ddbDefinition.range.aoeType)?.value,
+        units: "ft",
+      };
+    } else if (this.ddbDefinition.range && this.ddbDefinition.range.range) {
+      this.data.system.range = {
+        value: this.ddbDefinition.range.range,
+        units: "ft",
+        long: this.ddbDefinition.range.long || "",
+      };
+    } else {
+      this.data.system.range = { value: 5, units: "ft", long: "" };
+    }
+  }
+
+  isMartialArtist(klass = null) {
+    if (klass) {
+      return klass.classFeatures.some((feature) => feature.definition.name === "Martial Arts");
+    } else {
+      return this.ddbData.character.classes.some((k) => k.classFeatures.some((feature) => feature.definition.name === "Martial Arts"));
+    }
+
+  }
+
+  _generateResourceFlags() {
+    const linkItems = game.modules.get("link-item-resource-5e")?.active;
+    const resourceType = getProperty(this.rawCharacter, "flags.ddbimporter.resources.type");
+    if (resourceType !== "disable" && linkItems) {
+      const hasResourceLink = getProperty(this.data.flags, "link-item-resource-5e.resource-link");
+      Object.keys(this.rawCharacter.system.resources).forEach((resource) => {
+        const detail = this.rawCharacter.system.resources[resource];
+        if (this.ddbDefinition.name === detail.label) {
+          setProperty(this.data.flags, "link-item-resource-5e.resource-link", resource);
+          this.rawCharacter.system.resources[resource] = { value: 0, max: 0, sr: false, lr: false, label: "" };
+        } else if (hasResourceLink === resource) {
+          setProperty(this.data.flags, "link-item-resource-5e.resource-link", undefined);
+        }
+      });
+    }
+  }
+
+  _getFeatModifierItem(choice, type) {
+    if (this.ddbDefinition.grantedModifiers) return this.ddbDefinition;
+    let modifierItem = duplicate(this.ddbDefinition);
+    const modifiers = [
+      _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getChosenClassModifiers */ .Z.getChosenClassModifiers(this.ddbData, { includeExcludedEffects: true, effectOnly: true }),
+      _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getModifiers */ .Z.getModifiers(this.ddbData, "race", true, true),
+      _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getModifiers */ .Z.getModifiers(this.ddbData, "background", true, true),
+      _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getModifiers */ .Z.getModifiers(this.ddbData, "feat", true, true),
+    ].flat();
+
+    if (!modifierItem.definition) modifierItem.definition = {};
+    modifierItem.definition.grantedModifiers = modifiers.filter((mod) => {
+      if (mod.componentId === this.ddbDefinition?.id && mod.componentTypeId === this.ddbDefinition?.entityTypeId)
+        return true;
+      if (choice && this.ddbData.character.options[type]?.length > 0) {
+        // if it is a choice option, try and see if the mod matches
+        const choiceMatch = this.ddbData.character.options[type].some(
+          (option) =>
+            // id match
+            choice.componentId == option.componentId // the choice id matches the option componentID
+            && option.definition.id == mod.componentId // option id and mod id match
+            && (choice.componentTypeId == option.componentTypeId // either the choice componenttype and optiontype match or
+              || choice.componentTypeId == option.definition.entityTypeId) // the choice componentID matches the option definition entitytypeid
+            && option.definition.entityTypeId == mod.componentTypeId // mod componentId matches option entity type id
+            && choice.id == mod.componentId // choice id and mod id match
+        );
+        // console.log(`choiceMatch ${choiceMatch}`);
+        if (choiceMatch) return true;
+      } else if (choice) {
+        // && choice.parentChoiceId
+        const choiceIdSplit = choice.choiceId.split("-").pop();
+        if (mod.id == choiceIdSplit) return true;
+      }
+
+      if (mod.componentId === this.ddbDefinition.id) {
+        if (type === "class") {
+          // logger.log("Class check - feature effect parsing");
+          const classFeatureMatch = this.ddbData.character.classes.some((klass) =>
+            klass.classFeatures.some(
+              (f) => f.definition.entityTypeId == mod.componentTypeId && f.definition.id == this.ddbDefinition.id
+            )
+          );
+          if (classFeatureMatch) return true;
+        } else if (type === "feat") {
+          const featMatch = this.ddbData.character.feats.some(
+            (f) => f.definition.entityTypeId == mod.componentTypeId && f.definition.id == this.ddbDefinition.id
+          );
+          if (featMatch) return true;
+        } else if (type === "race") {
+          const traitMatch = this.ddbData.character.race.racialTraits.some(
+            (t) =>
+              t.definition.entityTypeId == mod.componentTypeId
+              && t.definition.id == mod.componentId
+              && t.definition.id == this.ddbDefinition.id
+          );
+          if (traitMatch) return true;
+        }
+      }
+      return false;
+    });
+    // console.warn("Modifier Item", modifierItem);
+    return modifierItem;
+  }
+
+  _addEffects(choice, type) {
+    // can we apply any effects to this feature
+    const compendiumItem = this.rawCharacter.flags.ddbimporter.compendium;
+    const addCharacterEffects = compendiumItem
+      ? game.settings.get("ddb-importer", "munching-policy-add-effects")
+      : game.settings.get("ddb-importer", "character-update-policy-add-character-effects");
+    const modifierItem = this._getFeatModifierItem(choice, type);
+    if (addCharacterEffects) {
+      this.data = (0,_effects_effects_js__WEBPACK_IMPORTED_MODULE_5__/* .generateEffects */ .K7)(this.ddbData, this.rawCharacter, modifierItem, this.data, compendiumItem, "feat");
+      // console.log(item);
+    } else {
+      this.data = (0,_effects_acEffects_js__WEBPACK_IMPORTED_MODULE_6__/* .generateBaseACItemEffect */ .se)(this.ddbData, this.rawCharacter, modifierItem, this.data, compendiumItem);
+    }
+  }
+
+
+  _addCustomValues() {
+    _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].addCustomValues */ .Z.addCustomValues(this.ddbData, this.data);
+  }
+
+  _generateSystemSubType() {
+    if (this.type === "class") {
+      let subType = null;
+      if (this.data.name.startsWith("Ki:")) subType = "Ki";
+      // many ki abilities do not start with ki
+      else if (this.data.name.startsWith("Channel Divinity:")) subType = "channelDivinity";
+      else if (this.data.name.startsWith("Artificer Infusion:")) subType = "artificerInfusion";
+      else if (this.data.name.startsWith("Invocation:")) subType = "eldritchInvocation";
+      else if (this.data.name.startsWith("Fighting Style:")) subType = "fightingStyle";
+      else if (this.data.name.startsWith("Battle Master Maneuver:")) subType = "maneuver";
+      else if (this.data.name.startsWith("Metamagic:")) subType = "metamagic";
+      else if (this.data.name.startsWith("Pact of the")) subType = "pact";
+      else if (this.data.name.startsWith("Rune Carver:")) subType = "rune";
+      else if (this.data.name.startsWith("Psionic Power:")) subType = "psionicPower";
+      else if (this.data.name.startsWith("Hunter's Prey:")) subType = "huntersPrey";
+      else if (this.data.name.startsWith("Defensive Tactics:")) subType = "defensiveTactic";
+      else if (this.data.name.startsWith("Superior Hunter's Defense:")) subType = "superiorHuntersDefense";
+      else if (this.data.name.startsWith("Arcane Shot Options:")) subType = "arcaneShot";
+      else if (this.data.name.startsWith("Elemental Disciplines:")) subType = "elementalDiscipline";
+      // missing: Arcane Shot : arcaneShot
+      // missing: multiattack
+
+      if (subType) setProperty(this.data, "system.type.subtype", subType);
+    }
+  }
+
+  _generateSystemType() {
+    setProperty(this.data, "system.type.value", this.type);
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  build() {
+    // override this feature
+    return false;
+  }
+
+}
+
+
+/***/ }),
+
+/***/ 4074:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "Z": () => (/* binding */ DDBFeature)
+/* harmony export */ });
+/* harmony import */ var _dictionary_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(37);
+/* harmony import */ var _lib_CompendiumHelper_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3893);
+/* harmony import */ var _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(1438);
+/* harmony import */ var _lib_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(7669);
+/* harmony import */ var _logger_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(5259);
+/* harmony import */ var _advancements_AdvancementHelper_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(333);
+/* harmony import */ var _DDBAttackAction_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(5345);
+/* harmony import */ var _DDBBaseFeature_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(5025);
+
+
+
+
+
+
+
+
+
+
+class DDBFeature extends _DDBBaseFeature_js__WEBPACK_IMPORTED_MODULE_7__/* ["default"] */ .Z {
+
+  static FORCE_UNARMED = [
+    "Trunk",
+    "Claws",
+  ];
+
+  static DOC_TYPE = {
+    class: "feat", // class feature
+    subclass: "feat", // subclass feature
+    race: "feat",
+    background: "background",
+    feat: "feat",
+  };
+
+  _init() {
+    this.documentType = DDBFeature.DOC_TYPE[this.type];
+    this.tagType = this.type;
+    _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].debug */ .Z.debug(`Generating Feature ${this.ddbDefinition.name}`);
+    this._class = this.noMods
+      ? null
+      : this.ddbData.character.classes.find((klass) =>
+        (this.ddbDefinition.classId
+          && (klass.definition.id === this.ddbDefinition.classId || klass.subclassDefinition?.id === this.ddbDefinition.classId))
+        || (this.ddbDefinition.className && klass.definition.name === this.ddbDefinition.className
+          && ((!this.ddbDefinition.subclassName || this.ddbDefinition.subclassName === "")
+            || (this.ddbDefinition.subclassName && klass.subclassDefinition?.name === this.ddbDefinition.subclassName))
+        )
+      );
+    this._choices = this.noMods ? [] : _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].getChoices */ .Z.getChoices(this.ddbData, this.type, this.ddbDefinition);
+    this.isChoiceFeature = this._choices.length > 0;
+    this.include = !this.isChoiceFeature;
+    this.hasRequiredLevel = !this._class || (this._class && this._class.level >= this.ddbDefinition.requiredLevel);
+
+    this.advancementHelper = new _advancements_AdvancementHelper_js__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .Z({
+      ddbData: this.ddbData,
+      type: this.type,
+      noMods: this.noMods,
+    });
+  }
+
+  _generateDataStub() {
+    this.data = {
+      _id: foundry.utils.randomID(),
+      name: _lib_utils_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].nameString */ .Z.nameString(this.ddbDefinition.name),
+      type: this.documentType,
+      system: _lib_utils_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"].getTemplate */ .Z.getTemplate(this.documentType),
+      flags: {
+        ddbimporter: {
+          id: this.ddbDefinition.id,
+          type: this.tagType,
+          entityTypeId: this.ddbDefinition.entityTypeId,
+          dndbeyond: {
+            requiredLevel: this.ddbDefinition.requiredLevel,
+            displayOrder: this.ddbDefinition.displayOrder,
+            featureType: this.ddbDefinition.featureType,
+            classId: this.ddbDefinition.classId,
+            entityId: this.ddbDefinition.entityId,
+            entityRaceId: this.ddbDefinition.entityRaceId,
+            entityType: this.ddbDefinition.entityType,
+          },
+        },
+        obsidian: {
+          source: {
+            type: this.tagType,
+          },
+        },
+      }
+    };
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  _prepare() {
+    // override this feature
+  }
+
+  _buildUnarmed() {
+    const override = {
+      name: this.data.name,
+      description: this.ddbDefinition.description,
+      snippet: this.ddbDefinition.snippet,
+      id: this.ddbDefinition.id,
+      entityTypeId: this.ddbDefinition.entityTypeId,
+      componentId: this.ddbDefinition.componentId,
+      componentTypeId: this.ddbDefinition.componentTypeId,
+    };
+
+    const unarmedStrikeMock = deepClone(CONFIG.DDB.naturalActions[0]);
+    unarmedStrikeMock.displayAsAttack = true;
+    const strikeMock = Object.assign(unarmedStrikeMock, override);
+
+    const ddbAttackAction = new _DDBAttackAction_js__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .Z({
+      ddbData: this.ddbData,
+      ddbDefinition: strikeMock,
+      rawCharacter: this.rawCharacter,
+      type: this.type,
+      documentType: "weapon",
+    });
+    ddbAttackAction.build();
+
+    this.data = ddbAttackAction.data;
+  }
+
+  _buildBasic() {
+    this._generateSystemType();
+    this._generateSystemSubType();
+
+    // this._generateLimitedUse();
+    // this._generateRange();
+    // this._generateResourceConsumption();
+    // this._generateActivation();
+    // this._generateLevelScaleDice();
+
+    this.data.system.source = _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].parseSource */ .Z.parseSource(this.ddbDefinition);
+
+    this._generateDescription(true);
+    this._addEffects(undefined, this.type);
+
+    // this._generateFlagHints();
+    // this._generateResourceFlags();
+    // this._addCustomValues();
+  }
+
+  async _generateFeatureAdvancements() {
+    // STUB
+    _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].info */ .Z.info(`Generating feature advancements for ${this.ddbDefinition.name} are not yet supported`);
+  }
+
+  _addAdvancement(advancement) {
+    if (!advancement) return;
+    const advancementData = advancement.toObject();
+    if (
+      advancementData.configuration.choices.length !== 0
+      || advancementData.configuration.grants.length !== 0
+      || (advancementData.value && Object.keys(advancementData.value).length !== 0)
+    ) {
+      // console.warn(advancementData)
+      // console.warn("ADVANCEMENT", {
+      //   advancement,
+      //   advancementData,
+      //   choicebool: advancementData.configuration.choices.length !== 0,
+      //   grantbool: advancementData.configuration.grants.length !== 0,
+      //   valuebool: (advancementData.value && Object.keys(advancementData.value).length !== 0),
+      // });
+      this.data.system.advancement.push(advancementData);
+    }
+  }
+
+  _generateSkillAdvancements() {
+    const mods = this.advancementHelper.noMods
+      ? []
+      : _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].getModifiers */ .Z.getModifiers(this.ddbData, this.type);
+    const skillExplicitMods = mods.filter((mod) =>
+      mod.type === "proficiency"
+      && _dictionary_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"].character.skills.map */ .Z.character.skills.map((s) => s.subType).includes(mod.subType)
+    );
+    const advancement = this.advancementHelper.getSkillAdvancement(skillExplicitMods, this.ddbDefinition, undefined, 0);
+    this._addAdvancement(advancement);
+  }
+
+  _generateLanguageAdvancements() {
+    const mods = this.advancementHelper.noMods
+      ? []
+      : _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].getModifiers */ .Z.getModifiers(this.ddbData, this.type);
+
+    const advancement = this.advancementHelper.getLanguageAdvancement(mods, this.ddbDefinition, 0);
+    this._addAdvancement(advancement);
+  }
+
+  _generateToolAdvancements() {
+    const mods = this.advancementHelper.noMods
+      ? []
+      : _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].getModifiers */ .Z.getModifiers(this.ddbData, this.type);
+    const advancement = this.advancementHelper.getToolAdvancement(mods, this.ddbDefinition, 0);
+    this._addAdvancement(advancement);
+  }
+
+  _generateSkillOrLanguageAdvancements() {
+    // STUB
+    _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].info */ .Z.info(`Generating skill or language advancements for ${this.ddbDefinition.name} are not yet supported`);
+  }
+
+  async generateAdvancements() {
+    await this._generateFeatureAdvancements();
+    this._generateSkillAdvancements();
+    this._generateLanguageAdvancements();
+    this._generateToolAdvancements();
+    // FUTURE: Equipment?  needs better handling in Foundry
+    this._generateSkillOrLanguageAdvancements();
+  }
+
+  async buildBackgroundFeatAdvancements(extraFeatIds = []) {
+    const characterFeatIds = getProperty(this.ddbData, "character.background.definition.featList.featIds") ?? [];
+    const featIds = extraFeatIds.concat(characterFeatIds);
+    if (featIds.length === 0) return;
+
+    const advancement = new game.dnd5e.documents.advancement.ItemGrantAdvancement();
+    const indexFilter = {
+      fields: [
+        "name",
+        "flags.ddbimporter.featId",
+      ],
+    };
+    const compendium = _lib_CompendiumHelper_js__WEBPACK_IMPORTED_MODULE_1__/* ["default"].getCompendiumType */ .Z.getCompendiumType("feats");
+    await compendium.getIndex(indexFilter);
+
+    const feats = compendium.index.filter((f) => featIds.includes(getProperty(f, "flags.ddbimporter.featId")));
+
+    advancement.updateSource({
+      configuration: {
+        items: feats.map((f) => f.uuid),
+      },
+      title: "Feat",
+    });
+    this.data.system.advancement.push(advancement.toObject());
+
+    const advancementLinkData = getProperty(this.data, "flags.ddbimporter.advancementLink") ?? [];
+    const advancementData = {
+      _id: advancement._id,
+      features: {}
+    };
+    advancementData[advancement._id] = {};
+    feats.forEach((f) => {
+      advancementData.features[f.name] = f.uuid;
+    });
+    advancementLinkData.push(advancementData);
+    setProperty(this.data, "flags.ddbimporter.advancementLink", advancementLinkData);
+  }
+
+  _buildBackground() {
+    try {
+      this._generateSystemType();
+      this._generateSystemSubType();
+
+      this.data.system.source = _lib_DDBHelper_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"].parseSource */ .Z.parseSource(this.ddbDefinition);
+
+      _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].debug */ .Z.debug(`Found background ${this.ddbDefinition.name}`);
+      _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].debug */ .Z.debug(`Found ${this._choices.map((c) => c.label).join(",")}`);
+
+      this._generateDescription(true);
+      this.data.system.description.value += `<h3>Proficiencies</h3><ul>`;
+      this._choices.forEach((choice) => {
+        this._addEffects(choice, this.type);
+        this.data.system.description.value += `<li>${choice.label}</li>`;
+      });
+      this.data.system.description.value += `</ul>`;
+      this.data.img = "icons/skills/trades/academics-book-study-purple.webp";
+      this.data.name = this.data.name.split("Background: ").pop();
+
+    } catch (err) {
+      _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].warn */ .Z.warn(
+        `Unable to Generate Background Feature: ${this.name}, please log a bug report. Err: ${err.message}`,
+        "extension"
+      );
+      _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].error */ .Z.error("Error", err);
+    }
+  }
+
+
+  build() {
+    try {
+      if (DDBFeature.FORCE_UNARMED.includes(this.data.name)) {
+        this._buildUnarmed();
+      } else if (this.type === "background") {
+        // work around till background parsing support advancements
+        this.isChoiceFeature = false;
+        this._buildBackground();
+      } else if (this.isChoiceFeature) {
+        _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].debug */ .Z.debug(`${this.name} has multiple choices and you  need to pass this instance to DDBChoiceFeature`);
+        //  DDBChoiceFeature.buildChoiceFeatures(this);
+      } else {
+        this._buildBasic();
+      }
+    } catch (err) {
+      _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].warn */ .Z.warn(
+        `Unable to Generate Basic Feature: ${this.name}, please log a bug report. Err: ${err.message}`,
+        "extension"
+      );
+      _logger_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"].error */ .Z.error("Error", err);
+    }
+  }
+
+}
+
+
+/***/ }),
+
 /***/ 1278:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -37953,7 +38598,7 @@ class DDBCompanionFactory {
 /* harmony export */   "t": () => (/* binding */ fixFeatures)
 /* harmony export */ });
 /* harmony import */ var _muncher_table_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(7967);
-/* harmony import */ var _effects_specialFeats_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(5470);
+/* harmony import */ var _effects_specialFeats_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3747);
 
 
 
@@ -38035,7 +38680,12 @@ async function fixFeatures(features) {
         };
         break;
       case "Daunting Roar": {
-        feature.system.range.value = 10;
+        feature.system.target = {
+          value: 10,
+          units: "ft",
+          type: "radius",
+        };
+        feature.system.range.units = "self";
         break;
       }
       case "Dark One’s Blessing":
@@ -38056,6 +38706,19 @@ async function fixFeatures(features) {
         feature.system.damage = { parts: [["1d100", ""]], versatile: "", value: "" };
         feature.system.actionType = "other";
         break;
+      case "Draconic Resilience": {
+        if (feature.effects.length === 1) {
+          feature.effects[0].changes = [
+            {
+              key: "system.attributes.ac.calc",
+              value: "draconic",
+              mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
+              priority: 15,
+            },
+          ];
+        }
+        break;
+      }
       case "Eldritch Cannon: Force Ballista":
         feature.system.target.value = 1;
         feature.system.target.type = "creature";
@@ -38154,6 +38817,10 @@ async function fixFeatures(features) {
         feature.system.range = { value: null, units: "self", long: null };
         break;
       }
+      case "Hound of Ill Omen": {
+        feature.system.consume.amount = 3;
+        break;
+      }
       case "Intimidating Presence": {
         feature.system.duration = { value: 2, units: "turns" };
         feature.system.target.value = 1;
@@ -38213,6 +38880,8 @@ async function fixFeatures(features) {
       case "Psychic Blades: Bonus Attack":
       case "Psychic Blades: Attack": {
         feature.system.actionType = "mwak";
+        feature.system.properties.push("fin");
+        feature.system.properties.push("thr");
         break;
       }
       case "Quickened Healing": {
@@ -38385,6 +39054,31 @@ async function fixFeatures(features) {
         setProperty(feature.system, "damage.parts", [["@scale.battle-master.combat-superiority-die"]]);
         break;
       }
+      case "Unarmored Defense": {
+        if (feature.effects.length === 1) {
+          const klass = getProperty(feature, "flags.ddbimporter.class");
+          if (klass == "Barbarian") {
+            feature.effects[0].changes = [
+              {
+                key: "system.attributes.ac.calc",
+                value: "unarmoredBarb",
+                mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
+                priority: 15,
+              },
+            ];
+          } else if (klass === "Monk") {
+            feature.effects[0].changes = [
+              {
+                key: "system.attributes.ac.calc",
+                value: "unarmoredMonk",
+                mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE,
+                priority: 15,
+              },
+            ];
+          }
+        }
+        break;
+      }
       case "Wrath of the Storm": {
         feature.system.damage = { parts: [["2d8", "lightning"]], versatile: "", value: "" };
         break;
@@ -38394,6 +39088,8 @@ async function fixFeatures(features) {
 
     if (name.endsWith(" Breath Weapon") && feature.system.target?.type === "line") {
       feature.system.target.value = 30;
+    } else if (name.endsWith("[Infusion] Spell-Refueling Ring")) {
+      feature.system.activation.type = "action";
     }
 
     // eslint-disable-next-line no-await-in-loop
@@ -41319,6 +42015,8 @@ function getTarget(data) {
     result.value = getTargetValues(data);
   }
 
+  const rangeValue = getProperty(data, "definition.range.rangeValue");
+
   switch (data.definition.range.origin) {
     case "Touch":
       result.units = "touch";
@@ -41326,7 +42024,15 @@ function getTarget(data) {
       break;
     case "Self": {
       const dmgSpell = data.definition.modifiers.some((mod) => mod.type === "damage");
-      result.type = (dmgSpell) ? "creature" : "self";
+      if (dmgSpell && rangeValue) {
+        result.value = rangeValue;
+        result.units = "ft";
+        result.type = "radius";
+      } else if (dmgSpell) {
+        result.type = "creature";
+      } else {
+        result.type = "self";
+      }
       break;
     }
     case "None":
@@ -42005,7 +42711,7 @@ function fixSpells(ddb, items) {
         spell.system.actionType = "util";
         spell.system.target.type = "self";
         spell.system.damage.parts[0] = ["5", "temphp"];
-        spell.system.scaling = { mode: "level", formula: "(@item.level - 1) * 5" };
+        spell.system.scaling = { mode: "level", formula: "((@item.level - 1) * 5)" };
         break;
       }
       case "Arms of Hadar": {
@@ -42535,6 +43241,14 @@ const SETTINGS = {
         type: Boolean,
         default: false,
       },
+      "add-ddb-languages": {
+        name: "ddb-importer.settings.add-ddb-languages.name",
+        hint: "ddb-importer.settings.add-ddb-languages.hint",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+      },
     },
     // ready settings
     READY: {
@@ -42697,7 +43411,7 @@ const SETTINGS = {
         "no-item-macros": {
           name: "ddb-importer.settings.no-item-macros.name",
           hint: "ddb-importer.settings.no-item-macros.hint",
-          config: false,
+          config: true,
           type: Boolean,
           default: false,
         },
@@ -43427,6 +44141,10 @@ const SETTINGS = {
             type: Boolean,
             default: false,
           },
+          "munching-policy-use-generic-items": {
+            type: Boolean,
+            default: false,
+          }
         },
         ENCOUNTER: {
           "encounter-import-policy-create-scene": {
@@ -46778,8 +47496,8 @@ DDBMonster/* default.prototype.addSpells */.Z.prototype.addSpells = async functi
   }
 };
 
-// EXTERNAL MODULE: ./src/parser/DDBCharacter.js + 12 modules
-var DDBCharacter = __webpack_require__(5992);
+// EXTERNAL MODULE: ./src/parser/DDBCharacter.js + 8 modules
+var DDBCharacter = __webpack_require__(737);
 ;// CONCATENATED MODULE: ./src/parser/character/index.js
 
 
@@ -47181,6 +47899,7 @@ function calculateACOptions(data, character, calculatedArmor) {
           type: "Natural",
           acCalc,
           shieldMod,
+          calculatedArmor,
         };
         if (acCalc > actorBase) actorBase = acCalc - shieldMod;
         effect = (0,acEffects/* generateFixedACEffect */.LY)(acValue.value, `AC ${calculatedArmor.armors[armor].definition.name} (Natural): ${acValue.value}`, true);
@@ -47194,6 +47913,7 @@ function calculateACOptions(data, character, calculatedArmor) {
           type: "Unarmored Defense",
           acCalc,
           shieldMod,
+          calculatedArmor,
         };
         if (acCalc > actorBase) actorBase = acCalc - shieldMod;
         effect = (0,acEffects/* generateFixedACEffect */.LY)(acValue.value, `AC ${calculatedArmor.armors[armor].definition.name} (Unarmored Defense): ${acValue.value}`);
@@ -47208,6 +47928,7 @@ function calculateACOptions(data, character, calculatedArmor) {
           type: "Unarmored",
           acCalc,
           shieldMod,
+          calculatedArmor,
         };
         if (acCalc > actorBase) actorBase = acCalc - shieldMod;
         effect = (0,acEffects/* generateFixedACEffect */.LY)(`${acValue.value} + @abilities.dex.mod`, `AC ${calculatedArmor.armors[armor].definition.name} (Unarmored): ${acValue.value}`, true, 15);
@@ -47221,6 +47942,7 @@ function calculateACOptions(data, character, calculatedArmor) {
           type: "Heavy",
           acCalc,
           shieldMod,
+          calculatedArmor,
         };
         effect = (0,acEffects/* generateFixedACEffect */.LY)(acValue.value, `AC ${calculatedArmor.armors[armor].definition.name} (Heavy): ${acValue.value}`);
         break;
@@ -47238,6 +47960,7 @@ function calculateACOptions(data, character, calculatedArmor) {
           type: "Medium",
           acCalc,
           shieldMod,
+          calculatedArmor,
         };
         effect = (0,acEffects/* generateFixedACEffect */.LY)(`${acCalc} + {@abilities.dex.mod, ${maxDexMedium}}kl`, `AC ${calculatedArmor.armors[armor].definition.name} (Medium): ${acValue.value}`);
         break;
@@ -47250,6 +47973,7 @@ function calculateACOptions(data, character, calculatedArmor) {
           type: "Light",
           acCalc,
           shieldMod,
+          calculatedArmor,
         };
         effect = (0,acEffects/* generateFixedACEffect */.LY)(`${acCalc} + @abilities.dex.mod`, `AC ${calculatedArmor.armors[armor].definition.name} (Light): ${acValue.value}`);
         break;
@@ -47263,6 +47987,7 @@ function calculateACOptions(data, character, calculatedArmor) {
           acCalc,
           shieldMod,
           formula: calculatedArmor.armors[armor].definition.formula,
+          calculatedArmor,
         };
         effect = (0,acEffects/* generateFixedACEffect */.LY)(acValue.formula, `AC ${acValue.name}: ${acValue.value}`, false, 22);
         break;
@@ -47275,6 +48000,7 @@ function calculateACOptions(data, character, calculatedArmor) {
           type: "Other",
           acCalc,
           shieldMod,
+          calculatedArmor,
         };
         effect = (0,acEffects/* generateFixedACEffect */.LY)(`${acCalc} + @abilities.dex.mod`, `AC ${calculatedArmor.armors[armor].definition.name}: ${acValue.value}`, false, 22);
         break;
@@ -47286,7 +48012,7 @@ function calculateACOptions(data, character, calculatedArmor) {
       effects.push(effect);
     }
     armorClassValues.push(acValue);
-    if (acValue.value >= maxValue) {
+    if (acValue.value > maxValue || (acValue.value === "Unarmored Defense" && acValue.value >= maxValue)) {
       maxType = acValue.type;
       maxValue = acValue.value;
       maxData = deepClone(acValue);
@@ -47340,22 +48066,22 @@ DDBCharacter/* default.prototype._generateArmorClass */.Z.prototype._generateArm
 
   // get a list of equipped armor
   // we make a distinction so we can loop over armor
-  let equippedArmor = this.source.ddb.character.inventory.filter(
+  this.armor.equippedArmor = this.source.ddb.character.inventory.filter(
     (item) => item.equipped && item.definition.filterType === "Armor"
   );
-  let baseAC = 10;
+  this.armor.baseAC = 10;
   // for things like fighters fighting style
-  let miscACBonus = 0;
-  let bonusEffects = [];
+  this.armor.miscACBonus = 0;
+  this.armor.bonusEffects = [];
   // lets get equipped gear
-  const equippedGear = this.source.ddb.character.inventory.filter(
+  this.armor.equippedGear = this.source.ddb.character.inventory.filter(
     (item) => item.equipped && item.definition.filterType !== "Armor"
   );
-  const unarmoredACBonus = DDBHelper/* default.filterBaseModifiers */.Z.filterBaseModifiers(this.source.ddb, "bonus", { subType: "unarmored-armor-class" })
+  this.armor.unarmoredACBonus = DDBHelper/* default.filterBaseModifiers */.Z.filterBaseModifiers(this.source.ddb, "bonus", { subType: "unarmored-armor-class" })
     .reduce((prev, cur) => prev + cur.value, 0);
 
   // lets get the AC for all our non-armored gear, we'll add this later
-  const gearAC = getEquippedAC(equippedGear);
+  this.armor.gearAC = getEquippedAC(this.armor.equippedGear);
 
   // While not wearing armor, lets see if we have special abilities
   if (this.isUnArmored()) {
@@ -47371,7 +48097,7 @@ DDBCharacter/* default.prototype._generateArmorClass */.Z.prototype._generateArm
       if (unarmoredAC) {
         // we add this as an armored type so we can get magical item bonuses
         // e.g. ring of protection
-        equippedArmor.push(getBaseArmor(unarmoredAC, "Unarmored Defense", "Unarmored defense"));
+        this.armor.equippedArmor.push(getBaseArmor(unarmoredAC, "Unarmored Defense", "Unarmored defense"));
       }
     });
   } else {
@@ -47381,23 +48107,23 @@ DDBCharacter/* default.prototype._generateArmorClass */.Z.prototype._generateArm
       (modifier) => modifier.subType === "armored-armor-class" && modifier.isGranted
     );
     const effect = (0,acEffects/* generateBonusACEffect */.AD)(armoredBonuses, "AC: Armored Misc Bonuses", "armored-armor-class", null);
-    if (effect.changes.length > 0) bonusEffects.push(effect);
+    if (effect.changes.length > 0) this.armor.bonusEffects.push(effect);
   }
 
   // Generic AC bonuses like Warforfed Integrated Protection
   // item modifiers are loaded by ac calcs
-  const miscModifiers = [
+  this.armor.miscModifiers = [
     DDBHelper/* default.getChosenClassModifiers */.Z.getChosenClassModifiers(this.source.ddb),
     DDBHelper/* default.getModifiers */.Z.getModifiers(this.source.ddb, "race"),
     DDBHelper/* default.getModifiers */.Z.getModifiers(this.source.ddb, "background"),
     DDBHelper/* default.getModifiers */.Z.getModifiers(this.source.ddb, "feat")
   ];
 
-  DDBHelper/* default.filterModifiersOld */.Z.filterModifiersOld(miscModifiers, "bonus", "armor-class", ["", null], true).forEach((bonus) => {
+  DDBHelper/* default.filterModifiersOld */.Z.filterModifiersOld(this.armor.miscModifiers, "bonus", "armor-class", ["", null], true).forEach((bonus) => {
     const component = DDBHelper/* default.findComponentByComponentId */.Z.findComponentByComponentId(this.source.ddb, bonus.componentId);
     const name = component ? component.definition?.name ?? component.name : `AC: Misc (${bonus.friendlySubtypeName})`;
     const effect = (0,acEffects/* generateBonusACEffect */.AD)([bonus], name, "armor-class", null);
-    if (effect.changes.length > 0) bonusEffects.push(effect);
+    if (effect.changes.length > 0) this.armor.bonusEffects.push(effect);
   });
 
   this.source.ddb.character.characterValues.filter((value) =>
@@ -47414,58 +48140,65 @@ DDBCharacter/* default.prototype._generateArmorClass */.Z.prototype._generateArm
         priority: 30,
       });
     }
-    if (effect.changes.length > 0) bonusEffects.push(effect);
+    if (effect.changes.length > 0) this.armor.bonusEffects.push(effect);
   });
 
-  miscACBonus += getDualWieldAC(this.source.ddb, miscModifiers);
+  this.armor.miscACBonus += getDualWieldAC(this.source.ddb, this.armor.miscModifiers);
 
   // Each racial armor appears to be slightly different!
   // We care about Tortles and Lizardfolk here as they can use shields, but their
   // modifier is set differently
   switch (this.source.ddb.character.race.fullName) {
     case "Lizardfolk":
-      baseAC = Math.max(getUnarmoredAC(this.source.ddb.character.modifiers.race, this.raw.character));
-      equippedArmor.push(getBaseArmor(baseAC, "Natural Armor", this.source.ddb.character.race.fullName));
+      this.armor.baseAC = Math.max(getUnarmoredAC(this.source.ddb.character.modifiers.race, this.raw.character));
+      this.armor.equippedArmor.push(
+        getBaseArmor(this.armor.baseAC, "Natural Armor", this.source.ddb.character.race.fullName)
+      );
       break;
     case "Autognome":
     case "Thri-kreen":
     case "Loxodon":
     case "Tortle":
-      baseAC = Math.max(getMinimumBaseAC(this.source.ddb.character.modifiers.race, this.raw.character), getUnarmoredAC(this.source.ddb.character.modifiers.race, this.raw.character));
-      equippedArmor.push(getBaseArmor(baseAC, "Natural Armor", this.source.ddb.character.race.fullName));
+      this.armor.baseAC = Math.max(
+        getMinimumBaseAC(this.source.ddb.character.modifiers.race, this.raw.character),
+        getUnarmoredAC(this.source.ddb.character.modifiers.race, this.raw.character)
+      );
+      this.armor.equippedArmor.push(
+        getBaseArmor(this.armor.baseAC, "Natural Armor", this.source.ddb.character.race.fullName)
+      );
       break;
     default:
-      equippedArmor.push(getBaseArmor(baseAC, "Unarmored"));
+      this.armor.equippedArmor.push(getBaseArmor(this.armor.baseAC, "Unarmored"));
   }
 
   if (this.source.ddb.character.feats.some((f) => f.definition.name === "Dragon Hide")) {
-    baseAC = Math.max(getUnarmoredAC(this.source.ddb.character.modifiers.feat, this.raw.character));
-    equippedArmor.push(getBaseArmor(baseAC, "Custom", "Dragon Hide", "13 + @abilities.dex.mod"));
+    this.armor.baseAC = Math.max(getUnarmoredAC(this.source.ddb.character.modifiers.feat, this.raw.character));
+    this.armor.equippedArmor.push(getBaseArmor(this.armor.baseAC, "Custom", "Dragon Hide", "13 + @abilities.dex.mod"));
   }
 
-  const shields = equippedArmor.filter((shield) => shield.definition.armorTypeId === 4);
-  const armors = equippedArmor.filter((armour) => armour.definition.armorTypeId !== 4);
+  this.armor.shields = this.armor.equippedArmor.filter((shield) => shield.definition.armorTypeId === 4);
+  this.armor.armors = this.armor.equippedArmor.filter((armour) => armour.definition.armorTypeId !== 4);
 
-  logger/* default.debug */.Z.debug("Calculated GearAC: " + gearAC);
-  logger/* default.debug */.Z.debug("Unarmoured AC Bonus:" + unarmoredACBonus);
-  logger/* default.debug */.Z.debug("Calculated MiscACBonus: " + miscACBonus);
-  logger/* default.debug */.Z.debug("Equipped AC Options: ", equippedArmor);
-  logger/* default.debug */.Z.debug("Armors: ", armors);
-  logger/* default.debug */.Z.debug("Shields: ", shields);
+  logger/* default.debug */.Z.debug("Calculated GearAC: " + this.armor.gearAC);
+  logger/* default.debug */.Z.debug("Unarmoured AC Bonus:" + this.armor.unarmoredACBonus);
+  logger/* default.debug */.Z.debug("Calculated MiscACBonus: " + this.armor.miscACBonus);
+  logger/* default.debug */.Z.debug("Equipped AC Options: ", this.armor.equippedArmor);
+  logger/* default.debug */.Z.debug("Armors: ", this.armor.armors);
+  logger/* default.debug */.Z.debug("Shields: ", this.armor.shields);
 
-  const calculatedArmor = {
-    gearAC,
-    unarmoredACBonus,
-    miscACBonus,
-    equippedArmor,
-    armors,
-    shields,
+  this.armor.calculatedArmor = {
+    gearAC: this.armor.gearAC,
+    unarmoredACBonus: this.armor.unarmoredACBonus,
+    miscACBonus: this.armor.miscACBonus,
+    equippedArmor: this.armor.equippedArmor,
+    armors: this.armor.armors,
+    shields: this.armor.shields,
   };
-  const results = calculateACOptions(this.source.ddb, this.raw.character, calculatedArmor);
+  this.armor.results = calculateACOptions(this.source.ddb, this.raw.character, this.armor.calculatedArmor);
 
   logger/* default.debug */.Z.debug("Calculated AC Results:", {
-    calculatedArmor,
-    results,
+    calculatedArmor: this.armor.calculatedArmor,
+    results: this.armor.results,
   });
   // get the max AC we can use from our various computed values
   // const max = Math.max(...results.armorClassValues.map((type) => type.value));
@@ -47500,27 +48233,27 @@ DDBCharacter/* default.prototype._generateArmorClass */.Z.prototype._generateArm
     && kf.name === "Unarmored Defense"
   )) calc = "unarmoredBarb";
 
-  if (results.maxType === "Natural") {
+  if (this.armor.results.maxType === "Natural") {
     calc = "natural";
-    flat = results.actorBase;
+    flat = this.armor.results.actorBase;
   }
 
-  if (results.maxType === "Custom") {
+  if (this.armor.results.maxType === "Custom") {
     calc = "custom";
-    formula = results.maxData.formula;
+    formula = this.armor.results.maxData.formula;
   }
 
   logger/* default.debug */.Z.debug("AC Results:", {
     fixed: {
       type: "Number",
       label: "Armor Class",
-      value: results.maxValue,
+      value: this.armor.results.maxValue,
     },
-    base: results.actorBase,
-    effects: results.effects,
-    bonusEffects: bonusEffects,
+    base: this.armor.results.actorBase,
+    effects: this.armor.results.effects,
+    bonusEffects: this.armor.bonusEffects,
     override: {
-      flat: results.maxValue,
+      flat: this.armor.results.maxValue,
       calc: "flat",
       formula: "",
     },
@@ -47531,18 +48264,19 @@ DDBCharacter/* default.prototype._generateArmorClass */.Z.prototype._generateArm
     },
   });
 
-  this.raw.character.system.attributes.ac = {
-    flat,
-    calc,
-    formula,
-  };
-  this.raw.character.effects = this.raw.character.effects.concat(bonusEffects);
+  // this.raw.character.system.attributes.ac = {
+  //   flat,
+  //   calc,
+  //   formula,
+  // };
 
-  this.raw.character.flags.ddbimporter.acEffects = results.effects;
-  this.raw.character.flags.ddbimporter.baseAC = results.actorBase;
+  this.raw.character.effects = this.raw.character.effects.concat(this.armor.bonusEffects);
+
+  this.raw.character.flags.ddbimporter.acEffects = this.armor.results.effects;
+  this.raw.character.flags.ddbimporter.baseAC = this.armor.results.actorBase;
   this.raw.character.flags.ddbimporter.autoAC = deepClone(this.raw.character.system.attributes.ac);
   this.raw.character.flags.ddbimporter.overrideAC = {
-    flat: results.maxValue,
+    flat: this.armor.results.maxValue,
     calc: "flat",
     formula: "",
   };
@@ -48435,8 +49169,8 @@ DDBCharacter/* default.prototype._generateHitPoints */.Z.prototype._generateHitP
       : rolledHP && game.settings.get("ddb-importer", "character-update-policy-use-hp-max-for-rolled-hp")
         ? maxHitPoints
         : null,
-    temp: temporaryHitPoints !== 0 ? temporaryHitPoints : null,
-    tempmax: tempMaxHitPoints !== 0 ? tempMaxHitPoints : null,
+    temp: temporaryHitPoints ?? 0,
+    tempmax: tempMaxHitPoints ?? 0,
     bonuses: {
       level: bonusPerLevelValue !== 0 ? bonusPerLevelValue : "",
       overall: overallBonus !== 0 ? overallBonus : "",
@@ -49305,7 +50039,7 @@ DDBCharacter/* default.prototype.resourceSelectionDialog */.Z.prototype.resource
 const resourceFeatureLinkMap = {
   "Channel Divinity": ["Channel Divinity:"],
   "Superiority Dice": ["Manoeuvres:", "Maneuvers:"],
-  "Sorcery Points": ["Metamagic - ", "Metamagic:"],
+  "Sorcery Points": ["Metamagic - ", "Metamagic:", "Hound of Ill Omen"],
   "Bardic Inspiration": [
     "Mote of Potential", "Unsettling Words", "Mantle of Inspiration",
     "Cutting Words", "Peerless Skill", "Tales from Beyond", "Blade Flourish",
@@ -49812,7 +50546,8 @@ function getDivineSmiteSpell(feature) {
   result.system.formula = `${regularDamage} + ${extraDamage}`;
   result.system.chatFlavor = `Use Other damage ${restriction.toLowerCase()}`;
   if (game.modules.get("midi-qol")?.active) {
-    result.system.activation.condition = `["undead", "fiend"].includes("@raceOrType")`;
+    // result.system.activation.condition = `["undead", "fiend"].includes("@raceOrType")`;
+    setProperty(document, "flags.midi-qol.effectCondition", `["undead", "fiend"].includes("@raceOrType")`);
   }
 
   return result;
@@ -49912,7 +50647,7 @@ function getEquipped(data) {
 }
 
 function getRechargeFormula(description, maxCharges) {
-  if (description === "") {
+  if (description === "" || !description) {
     return `${maxCharges}`;
   }
 
@@ -49944,7 +50679,7 @@ function getRechargeFormula(description, maxCharges) {
  * uses: { value: 0, max: 0, per: null }
  */
 function getUses(data) {
-  if (data.limitedUse !== undefined && data.limitedUse !== null) {
+  if (data.limitedUse !== undefined && data.limitedUse !== null && data.limitedUse.resetTypeDescription !== null) {
     let resetType = dictionary/* default.resets.find */.Z.resets.find((reset) => reset.id == data.limitedUse.resetType);
 
     const recovery = getRechargeFormula(data.limitedUse.resetTypeDescription, data.limitedUse.maxUses);
@@ -50679,7 +51414,9 @@ async function addRestrictionFlags(document, addEffects) {
     if (document.system.attunement > 0 && !["", "false"].includes(restriction.restriction)) {
       restrictionText += ` && @item.attunement !== 1`;
     }
-    setProperty(document, "system.activation.condition", restrictionText);
+    // setProperty(document, "system.activation.condition", restrictionText);
+    setProperty(document, "flags.midi-qol.effectCondition", restrictionText);
+
     if (restriction.effectRestrictionActivation) {
       setProperty(document, "flags.midi-qol.effectActivation", true);
     }
@@ -51009,6 +51746,8 @@ function parseWeapon(data, character, flags) {
 
   weapon.system.range = getRange(data, weapon.system.properties);
   weapon.system.uses = getUses(data);
+  // force weapons to always not use prompt
+  weapon.system.uses.prompt = false;
   weapon.system.ability = getAbility(weapon.system.properties, weapon.system.range);
   const mockAbility = weapon.system.ability === null
     ? weapon.system.properties.fin ? "dex" : "str"
@@ -52137,6 +52876,7 @@ function parseItem(ddb, ddbItem, character, flags) {
   try {
     // is it a weapon?
     let item = {};
+    const name = ddbItem.definition.name;
     if (ddbItem.definition.filterType) {
       switch (ddbItem.definition.filterType) {
         case "Weapon": {
@@ -52151,9 +52891,18 @@ function parseItem(ddb, ddbItem, character, flags) {
           item = parseArmor(ddbItem, character, flags);
           break;
         case "Ring":
-        case "Wondrous item":
-          item = parseWonderous(ddbItem);
+        case "Wondrous item": {
+          if ([
+            "bead of",
+            "dust of",
+            "elemental gem",
+          ].some((consumablePrefix) => name.toLowerCase().startsWith(consumablePrefix.toLowerCase()))) {
+            item = parseConsumable(ddbItem, { consumableTypeOverride: "trinket", ddbTypeOverride: ddbItem.definition.type });
+          } else {
+            item = parseWonderous(ddbItem);
+          }
           break;
+        }
         case "Scroll":
         case "Wand":
         case "Rod":
@@ -52722,12 +53471,16 @@ async function adjustConditionsWithCE(actor, conditionStates) {
  */
 async function setConditions(actor, ddb, keepLocal = false) {
   const dfConditionsOn = game.modules.get("dfreds-convenient-effects")?.active;
-  const useCEConditions = game.settings.get(src_settings/* default.MODULE_ID */.Z.MODULE_ID, "apply-conditions-with-ce");
+  const useCEConditions = dfConditionsOn ? game.settings.get(src_settings/* default.MODULE_ID */.Z.MODULE_ID, "apply-conditions-with-ce") : false;
   const conditionStates = getActorConditionStates(actor, ddb, keepLocal);
   // console.warn(conditionStates);
   logger/* default.debug */.Z.debug(`Condition states for ${actor.name}`, conditionStates);
 
-  if (dfConditionsOn && useCEConditions) {
+  const dfCEAdded = dfConditionsOn
+    ? game.settings.get("dfreds-convenient-effects", "modifyStatusEffects")
+    : "none";
+
+  if ((dfConditionsOn && useCEConditions && dfCEAdded !== "none") || (dfConditionsOn && dfCEAdded === "replace")) {
     await adjustConditionsWithCE(actor, conditionStates);
   } else {
     // remove conditions first
@@ -54379,8 +55132,12 @@ function activateUpdateHooks() {
     Hooks.on("deleteItem", (document) => activeUpdateAddOrDeleteItem(document, "DELETE"));
     // conditions syncing relies of Conv Effects
     const dfConditionsOn = game.modules.get("dfreds-convenient-effects")?.active;
-    const useCEConditions = game.settings.get(src_settings/* default.MODULE_ID */.Z.MODULE_ID, "apply-conditions-with-ce");
-    if (dfConditionsOn && useCEConditions) {
+    const useCEConditions = dfConditionsOn ? game.settings.get(src_settings/* default.MODULE_ID */.Z.MODULE_ID, "apply-conditions-with-ce") : false;
+    const dfCEAdded = dfConditionsOn
+      ? game.settings.get("dfreds-convenient-effects", "modifyStatusEffects")
+      : "none";
+
+    if ((dfConditionsOn && useCEConditions && dfCEAdded !== "none") || (dfConditionsOn && dfCEAdded === "replace")) {
       Hooks.on("createActiveEffect", (document) => activeUpdateEffectTrigger(document, "CREATE"));
       Hooks.on("updateActiveEffect", (document) => activeUpdateEffectTrigger(document, "UPDATE"));
       Hooks.on("deleteActiveEffect", (document) => activeUpdateEffectTrigger(document, "DELETE"));
@@ -55399,7 +56156,9 @@ class DDBCharacterManager extends FormApplication {
       }
 
       if (useInbuiltIcons) {
-        this.showCurrentTask("Adding SRD Icons");
+        this.showCurrentTask("Adding Inbuilt Icons");
+        items = await Iconizer/* default.getDDBHintImages */.Z.getDDBHintImages("class", items);
+        items = await Iconizer/* default.getDDBHintImages */.Z.getDDBHintImages("subclass", items);
         items = await Iconizer/* default.copyInbuiltIcons */.Z.copyInbuiltIcons(items);
       }
 
@@ -63838,7 +64597,46 @@ const fallbackDDBConfig = {
   vehicleConfiguration: null,
 };
 
+;// CONCATENATED MODULE: ./src/hooks/ready/addDDBConfig.js
+
+
+
+
+function addLanguages() {
+  if (game.settings.get(src_settings/* default.MODULE_ID */.Z.MODULE_ID, "add-ddb-languages")) {
+    const ddbRaw = getProperty(CONFIG, "DDB.languages");
+    if (!ddbRaw) return;
+
+    const ddbFiltered = [...new Set(ddbRaw
+      .map((lang) => utils/* default.nameString */.Z.nameString(lang.name))
+      .filter((lang) =>
+        !dictionary/* default.character.languages.some */.Z.character.languages.some((l) => l.name === lang)
+        && !["All"].includes(lang)
+      ))];
+
+    CONFIG.DND5E.languages.ddb = {
+      label: "D&D Beyond",
+      children: {
+      }
+    };
+    ddbFiltered.forEach((lang) => {
+      const stub = utils/* default.normalizeString */.Z.normalizeString(lang);
+      CONFIG.DND5E.languages.ddb.children[stub] = lang;
+      dictionary/* default.character.languages.push */.Z.character.languages.push({
+        name: lang,
+        value: stub,
+        advancement: "ddb",
+      });
+    });
+  }
+}
+
+function addDDBConfig() {
+  addLanguages();
+}
+
 ;// CONCATENATED MODULE: ./src/hooks/ready/ddbConfig.js
+
 
 
 
@@ -63915,10 +64713,14 @@ function loadDDBConfig() {
         logger/* default.debug */.Z.debug("DDB_CONFIG", CONFIG.DDB);
       } else {
         logger/* default.info */.Z.info("Loaded default DDB config, checking for live config access.");
-        directConfig();
+        directConfig().then(() => {
+          addDDBConfig();
+        });
       }
     } else {
-      proxyConfig();
+      proxyConfig().then(() => {
+        addDDBConfig();
+      });
     }
   }
 }
@@ -64851,6 +65653,7 @@ async function onceReady() {
 
   // notificaitons
   Notification();
+  loadDDBConfig();
 
   // delay the startup just a tiny little bit
   setTimeout(() => {
@@ -64859,9 +65662,7 @@ async function onceReady() {
     registerSheets();
     itemSheets();
     setupUpdateCreatedOrigins();
-    loadDDBConfig();
     activateUpdateHooks();
-
   }, 500);
 
   anchorInjection();

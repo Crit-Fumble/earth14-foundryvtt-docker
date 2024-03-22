@@ -8947,10 +8947,10 @@ class Actor5e extends SystemDocumentMixin(Actor) {
     const units = movement.units || Object.keys(CONFIG.DND5E.movementUnits)[0];
     return Object.entries(CONFIG.DND5E.movementTypes).reduce((html, [k, label]) => {
       const value = movement[k];
-      if ( value ) html += `
+      if ( value || (k === "walk") ) html += `
         <div class="row">
           <i class="fas ${k}"></i>
-          <span class="value">${value} <span class="units">${units}</span></span>
+          <span class="value">${value ?? 0} <span class="units">${units}</span></span>
           <span class="label">${label}</span>
         </div>
       `;
@@ -9183,6 +9183,11 @@ class Actor5e extends SystemDocumentMixin(Actor) {
     for ( const k of ["offsetX", "offsetY", "scaleX", "scaleY", "src", "tint"] ) {
       d.prototypeToken.texture[k] = source.prototypeToken.texture[k];
     }
+    foundry.utils.setProperty(d.prototypeToken, "flags.dnd5e.tokenRing", foundry.utils.mergeObject(
+      foundry.utils.getProperty(d.prototypeToken, "flags.dnd5e.tokenRing") ?? {},
+      foundry.utils.getProperty(source.prototypeToken, "flags.dnd5e.tokenRing") ?? {},
+      { inplace: false }
+    ));
     for ( const k of ["bar1", "bar2", "displayBars", "displayName", "disposition", "rotation", "elevation"] ) {
       d.prototypeToken[k] = o.prototypeToken[k];
     }
@@ -9382,6 +9387,11 @@ class Actor5e extends SystemDocumentMixin(Actor) {
       for ( const k of ["offsetX", "offsetY", "scaleX", "scaleY", "src", "tint"] ) {
         tokenUpdate.texture[k] = prototypeTokenData.texture[k];
       }
+      foundry.utils.setProperty(tokenUpdate, "flags.dnd5e.tokenRing", foundry.utils.mergeObject(
+        foundry.utils.getProperty(tokenUpdate, "flags.dnd5e.tokenRing") ?? {},
+        foundry.utils.getProperty(prototypeTokenData, "flags.dnd5e.tokenRing") ?? {},
+        { inplace: false }
+      ));
       tokenUpdate.sight = prototypeTokenData.sight;
       tokenUpdate.detectionModes = prototypeTokenData.detectionModes;
 
@@ -9409,15 +9419,18 @@ class Actor5e extends SystemDocumentMixin(Actor) {
     // Get the Tokens which represent this actor
     if ( canvas.ready ) {
       const tokens = this.getActiveTokens(true);
-      const tokenData = await original.getTokenDocument();
+      const tokenData = (await original.getTokenDocument()).toObject();
       const tokenUpdates = tokens.map(t => {
-        const update = duplicate(tokenData);
+        const update = foundry.utils.deepClone(tokenData);
         update._id = t.id;
         delete update.x;
         delete update.y;
+        if ( !foundry.utils.getProperty(tokenData, "flags.dnd5e.tokenRing") ) {
+          foundry.utils.setProperty(update, "flags.dnd5e.tokenRing", {});
+        }
         return update;
       });
-      await canvas.scene.updateEmbeddedDocuments("Token", tokenUpdates);
+      await canvas.scene.updateEmbeddedDocuments("Token", tokenUpdates, { diff: false, recursive: false });
     }
     if ( isOriginalActor ) {
       await this.unsetFlag("dnd5e", "isPolymorphed");
@@ -16288,7 +16301,10 @@ class ContainerData extends ItemDataModel.mixin(
 
   /** @inheritDoc */
   async getFavoriteData() {
-    return foundry.utils.mergeObject(await super.getFavoriteData(), { uses: await this.computeCapacity() });
+    const data = super.getFavoriteData();
+    const capacity = await this.computeCapacity();
+    if ( Number.isFinite(capacity.max) ) return foundry.utils.mergeObject(await data, { uses: capacity });
+    return await data;
   }
 
   /* -------------------------------------------- */
@@ -16424,7 +16440,7 @@ class ContainerData extends ItemDataModel.mixin(
    */
   async computeCapacity() {
     const { value, type } = this.capacity;
-    const context = { max: value };
+    const context = { max: value ?? Infinity };
     if ( type === "weight" ) {
       context.value = await this.contentsWeight;
       context.units = game.i18n.localize("DND5E.AbbreviationLbs");
@@ -23246,6 +23262,9 @@ class ActorSheet5eCharacter extends ActorSheet5e {
       ctx.isDepleted = ctx.isOnCooldown && ctx.hasUses && (uses.value > 0);
       ctx.hasTarget = item.hasAreaTarget || item.hasIndividualTarget;
 
+      // Unidentified items
+      ctx.concealDetails = !game.user.isGM && (item.system.identified === false);
+
       // Item grouping
       const [originId] = item.getFlag("dnd5e", "advancementOrigin")?.split(".") ?? [];
       const group = this.actor.items.get(originId);
@@ -24530,6 +24549,7 @@ class ActorSheet5eCharacter2 extends ActorSheet5eCharacter {
         { dragSelector: ".item-list .item", dropSelector: null },
         { dragSelector: ".containers .container", dropSelector: null },
         { dragSelector: ".favorites :is([data-item-id], [data-effect-id])", dropSelector: null },
+        { dragSelector: ":is(.race, .background)[data-item-id]", dropSelector: null },
         { dragSelector: ".classes .gold-icon[data-item-id]", dropSelector: null },
         { dragSelector: "[data-key] .skill-name, [data-key] .tool-name", dropSelector: null },
         { dragSelector: ".spells-list .spell-header, .slots[data-favorite-id]", dropSelector: null }
@@ -26401,7 +26421,7 @@ class Award extends DialogMixin(FormApplication) {
 
   /**
    * Award currency, optionally transferring between one document and another.
-   * @param {object[]} amounts                 Amount of each denomination to transfer.
+   * @param {Record<string, number>} amounts   Amount of each denomination to transfer.
    * @param {(Actor5e|Item5e)[]} destinations  Documents that should receive the currency.
    * @param {object} [config={}]
    * @param {boolean} [config.each=false]      Award the specified amount to each player, rather than splitting it.
@@ -27275,13 +27295,68 @@ var _module$d = /*#__PURE__*/Object.freeze({
 });
 
 /**
+ * Adds functionality to a custom HTML element for caching its stylesheet and adopting it into its Shadow DOM, rather
+ * than having each stylesheet duplicated per element.
+ * @param {typeof HTMLElement} Base  The base class being mixed.
+ * @returns {typeof AdoptedStyleSheetElement}
+ */
+function AdoptedStyleSheetMixin(Base) {
+  return class AdoptedStyleSheetElement extends Base {
+    /**
+     * A map of cached stylesheets per Document root.
+     * @type {WeakMap<WeakKey<Document>, CSSStyleSheet>}
+     * @protected
+     */
+    static _stylesheets = new WeakMap();
+
+    /**
+     * The CSS content for this element.
+     * @type {string}
+     */
+    static CSS = "";
+
+    /* -------------------------------------------- */
+
+    /** @inheritDoc */
+    adoptedCallback() {
+      this._adoptStyleSheet(this._getStyleSheet());
+    }
+
+    /* -------------------------------------------- */
+
+    /**
+     * Retrieves the cached stylesheet, or generates a new one.
+     * @protected
+     */
+    _getStyleSheet() {
+      let sheet = this.constructor._stylesheets.get(this.ownerDocument);
+      if ( !sheet ) {
+        sheet = new this.ownerDocument.defaultView.CSSStyleSheet();
+        sheet.replaceSync(this.constructor.CSS);
+        this.constructor._stylesheets.set(this.ownerDocument, sheet);
+      }
+      return sheet;
+    }
+
+    /* -------------------------------------------- */
+
+    /**
+     * Adopt the stylesheet into the Shadow DOM.
+     * @param {CSSStyleSheet} sheet  The sheet to adopt.
+     * @abstract
+     */
+    _adoptStyleSheet(sheet) {}
+  }
+}
+
+/**
  * Custom element that adds a filigree border that can be colored.
  */
-class FiligreeBoxElement extends HTMLElement {
+class FiligreeBoxElement extends AdoptedStyleSheetMixin(HTMLElement) {
   constructor() {
     super();
     this.#shadowRoot = this.attachShadow({ mode: "closed" });
-    this.#buildStyle();
+    this._adoptStyleSheet(this._getStyleSheet());
     const backdrop = document.createElement("div");
     backdrop.classList.add("backdrop");
     this.#shadowRoot.appendChild(backdrop);
@@ -27297,82 +27372,55 @@ class FiligreeBoxElement extends HTMLElement {
     this.#shadowRoot.appendChild(slot);
   }
 
-  /**
-   * Shadow root that contains the box shapes.
-   * @type {ShadowRoot}
-   */
-  #shadowRoot;
-
-  /* -------------------------------------------- */
-
-  /**
-   * The stylesheet to attach to the element's shadow root.
-   * @type {CSSStyleSheet}
-   * @protected
-   */
-  static _stylesheet;
-
-  /* -------------------------------------------- */
-
-  /**
-   * Build the shadow DOM's styles.
-   */
-  #buildStyle() {
-    if ( !this.constructor._stylesheet ) {
-      this.constructor._stylesheet = new CSSStyleSheet();
-      this.constructor._stylesheet.replaceSync(`
-        :host {
-          position: relative;
-          isolation: isolate;
-          min-height: 56px;
-          filter: var(--filigree-drop-shadow, drop-shadow(0 0 12px var(--dnd5e-shadow-15)));
-        }
-        .backdrop {
-          --chamfer: 12px;
-          position: absolute;
-          inset: 0;
-          background: var(--filigree-background-color, var(--dnd5e-color-card));
-          z-index: -2;
-          clip-path: polygon(
-            var(--chamfer) 0,
-            calc(100% - var(--chamfer)) 0,
-            100% var(--chamfer),
-            100% calc(100% - var(--chamfer)),
-            calc(100% - var(--chamfer)) 100%,
-            var(--chamfer) 100%,
-            0 calc(100% - var(--chamfer)),
-            0 var(--chamfer)
-          );
-        }
-        .filigree {
-          position: absolute;
-          fill: var(--filigree-border-color, var(--dnd5e-color-gold));
-          z-index: -1;
-  
-          &.top, &.bottom { height: 30px; }
-          &.top { top: 0; }
-          &.bottom { bottom: 0; scale: 1 -1; }
-  
-          &.left, &.right { width: 25px; }
-          &.left { left: 0; }
-          &.right { right: 0; scale: -1 1; }
-  
-          &.bottom.right { scale: -1 -1; }
-        }
-        .filigree.block {
-          inline-size: calc(100% - 50px);
-          inset-inline: 25px;
-        }
-        .filigree.inline {
-          block-size: calc(100% - 60px);
-          inset-block: 30px;
-        }
-      `);
+  /** @inheritDoc */
+  static CSS = `
+    :host {
+      position: relative;
+      isolation: isolate;
+      min-height: 56px;
+      filter: var(--filigree-drop-shadow, drop-shadow(0 0 12px var(--dnd5e-shadow-15)));
     }
-    this.#shadowRoot.adoptedStyleSheets = [this.constructor._stylesheet];
-  }
+    .backdrop {
+      --chamfer: 12px;
+      position: absolute;
+      inset: 0;
+      background: var(--filigree-background-color, var(--dnd5e-color-card));
+      z-index: -2;
+      clip-path: polygon(
+        var(--chamfer) 0,
+        calc(100% - var(--chamfer)) 0,
+        100% var(--chamfer),
+        100% calc(100% - var(--chamfer)),
+        calc(100% - var(--chamfer)) 100%,
+        var(--chamfer) 100%,
+        0 calc(100% - var(--chamfer)),
+        0 var(--chamfer)
+      );
+    }
+    .filigree {
+      position: absolute;
+      fill: var(--filigree-border-color, var(--dnd5e-color-gold));
+      z-index: -1;
 
-  /* -------------------------------------------- */
+      &.top, &.bottom { height: 30px; }
+      &.top { top: 0; }
+      &.bottom { bottom: 0; scale: 1 -1; }
+
+      &.left, &.right { width: 25px; }
+      &.left { left: 0; }
+      &.right { right: 0; scale: -1 1; }
+
+      &.bottom.right { scale: -1 -1; }
+    }
+    .filigree.block {
+      inline-size: calc(100% - 50px);
+      inset-inline: 25px;
+    }
+    .filigree.inline {
+      block-size: calc(100% - 60px);
+      inset-block: 30px;
+    }
+  `;
 
   /**
    * Path definitions for the various box corners and edges.
@@ -27383,6 +27431,21 @@ class FiligreeBoxElement extends HTMLElement {
     block: "M 0 0 L 10 0 L 10 3.1 L 0 3.1 L 0 0 Z",
     inline: "M 0 10 L 0 0 L 2.99 0 L 2.989 10 L 0 10 Z M 6.9 10 L 6.9 0 L 8.6 0 L 8.6 10 L 6.9 10 Z"
   });
+
+  /**
+   * Shadow root that contains the box shapes.
+   * @type {ShadowRoot}
+   */
+  #shadowRoot;
+
+  /* -------------------------------------------- */
+
+  /** @inheritDoc */
+  _adoptStyleSheet(sheet) {
+    this.#shadowRoot.adoptedStyleSheets = [sheet];
+  }
+
+  /* -------------------------------------------- */
 
   /**
    * Build an SVG element.
@@ -27402,13 +27465,31 @@ class FiligreeBoxElement extends HTMLElement {
 /**
  * Custom element for displaying SVG icons that are cached and can be styled.
  */
-class IconElement extends HTMLElement {
+class IconElement extends AdoptedStyleSheetMixin(HTMLElement) {
   constructor() {
     super();
     this.#internals = this.attachInternals();
     this.#internals.role = "img";
     this.#shadowRoot = this.attachShadow({ mode: "closed" });
   }
+
+  /** @inheritDoc */
+  static CSS = `
+    :host {
+      display: contents;
+    }
+    svg {
+      fill: var(--icon-fill, #000);
+      width: var(--icon-width, var(--icon-size, 1em));
+      height: var(--icon-height, var(--icon-size, 1em));
+    }
+  `;
+
+  /**
+   * Cached SVG files by SRC.
+   * @type {Map<string, SVGElement|Promise<SVGElement>>}
+   */
+  static #svgCache = new Map();
 
   /**
    * The custom element's form and accessibility internals.
@@ -27438,40 +27519,16 @@ class IconElement extends HTMLElement {
 
   /* -------------------------------------------- */
 
-  /**
-   * Stylesheet that is shared among all icons.
-   * @type {CSSStyleSheet}
-   */
-  static #stylesheet;
-
-  /* -------------------------------------------- */
-
-  /**
-   * Cached SVG files by SRC.
-   * @type {Map<string, SVGElement|Promise<SVGElement>>}
-   */
-  static #svgCache = new Map();
+  /** @inheritDoc */
+  _adoptStyleSheet(sheet) {
+    this.#shadowRoot.adoptedStyleSheets = [sheet];
+  }
 
   /* -------------------------------------------- */
 
   /** @inheritDoc */
   connectedCallback() {
-    // Create icon styles
-    if ( !this.constructor.#stylesheet ) {
-      this.constructor.#stylesheet = new CSSStyleSheet();
-      this.constructor.#stylesheet.replaceSync(`
-        :host {
-          display: contents;
-        }
-        svg {
-          fill: var(--icon-fill, #000);
-          width: var(--icon-width, var(--icon-size, 1em));
-          height: var(--icon-height, var(--icon-size, 1em));
-        }
-      `);
-    }
-    this.#shadowRoot.adoptedStyleSheets = [this.constructor.#stylesheet];
-
+    this._adoptStyleSheet(this._getStyleSheet());
     const insertElement = element => {
       if ( !element ) return;
       const clone = element.cloneNode(true);
@@ -28060,8 +28117,9 @@ class InventoryElement extends HTMLElement {
    * @returns {Promise<Item5e>}
    */
   async _onCreate(target) {
-    const dataset = (target.closest(".spellbook-header") ?? target).dataset;
-    const type = dataset.type;
+    const { type, ...dataset } = (target.closest(".spellbook-header") ?? target).dataset;
+    delete dataset.action;
+    delete dataset.tooltip;
 
     // Check to make sure the newly created class doesn't take player over level cap
     if ( type === "class" && (this.actor.system.details.level + 1 > CONFIG.DND5E.maxLevel) ) {
@@ -28502,7 +28560,7 @@ class ItemListControlsElement extends HTMLElement {
  * A custom HTML element that displays proficiency status and allows cycling through values.
  * @fires change
  */
-class ProficiencyCycleElement extends HTMLElement {
+class ProficiencyCycleElement extends AdoptedStyleSheetMixin(HTMLElement) {
   /** @inheritDoc */
   constructor() {
     super();
@@ -28510,9 +28568,68 @@ class ProficiencyCycleElement extends HTMLElement {
     this.#internals = this.attachInternals();
     this.#internals.role = "spinbutton";
     this.#shadowRoot = this.attachShadow({ mode: "open" });
-    this.#buildCSS();
+    this._adoptStyleSheet(this._getStyleSheet());
     this.#value = Number(this.getAttribute("value") ?? 0);
   }
+
+  /** @inheritDoc */
+  static CSS = `
+    :host { display: inline-block; }
+    div { --_fill: var(--proficiency-cycle-enabled-color, var(--dnd5e-color-blue)); }
+    div:has(:disabled, :focus-visible) { --_fill: var(--proficiency-cycle-disabled-color, var(--dnd5e-color-gold)); }
+    div:not(:has(:disabled)) { cursor: pointer; }
+
+    div {
+      position: relative;
+      overflow: clip;
+      width: 100%;
+      aspect-ratio: 1;
+
+      &::before {
+        content: "";
+        position: absolute;
+        display: block;
+        inset: 3px;
+        border: 1px solid var(--_fill);
+        border-radius: 100%;
+      }
+
+      &:has([value="1"])::before { background: var(--_fill); }
+
+      &:has([value="0.5"], [value="2"])::after {
+        content: "";
+        position: absolute;
+        background: var(--_fill);  
+      }
+
+      &:has([value="0.5"])::after {
+        inset: 4px;
+        width: 4px;
+        aspect-ratio: 1 / 2;
+        border-radius: 100% 0 0 100%;
+      }
+
+      &:has([value="2"]) {
+        &::before {
+          inset: 1px;
+          border-width: 2px;
+        }
+
+        &::after {
+          inset: 5px;
+          border-radius: 100%;
+        }
+      }
+    }
+
+    input {
+      position: absolute;
+      inset-block-start: -100px;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+    }
+  `;
 
   /**
    * Controller for removing listeners automatically.
@@ -28531,13 +28648,6 @@ class ProficiencyCycleElement extends HTMLElement {
    * @type {ShadowRoot}
    */
   #shadowRoot;
-
-  /**
-   * The stylesheet to attach to the element's shadow root.
-   * @type {CSSStyleSheet}
-   * @protected
-   */
-  static _stylesheet;
 
   /* -------------------------------------------- */
 
@@ -28622,7 +28732,6 @@ class ProficiencyCycleElement extends HTMLElement {
 
   /** @override */
   connectedCallback() {
-    this.replaceChildren();
     this.#buildHTML();
     this.#refreshValue();
 
@@ -28635,71 +28744,9 @@ class ProficiencyCycleElement extends HTMLElement {
 
   /* -------------------------------------------- */
 
-  /**
-   * Build the CSS internals.
-   */
-  #buildCSS() {
-    if ( !this.constructor._stylesheet ) {
-      this.constructor._stylesheet = new CSSStyleSheet();
-      this.constructor._stylesheet.replaceSync(`
-        :host { display: inline-block; }
-        div { --_fill: var(--proficiency-cycle-enabled-color, var(--dnd5e-color-blue)); }
-        div:has(:disabled, :focus-visible) { --_fill: var(--proficiency-cycle-disabled-color, var(--dnd5e-color-gold)); }
-        div:not(:has(:disabled)) { cursor: pointer; }
-  
-        div {
-          position: relative;
-          overflow: clip;
-          width: 100%;
-          aspect-ratio: 1;
-  
-          &::before {
-            content: "";
-            position: absolute;
-            display: block;
-            inset: 3px;
-            border: 1px solid var(--_fill);
-            border-radius: 100%;
-          }
-  
-          &:has([value="1"])::before { background: var(--_fill); }
-    
-          &:has([value="0.5"], [value="2"])::after {
-            content: "";
-            position: absolute;
-            background: var(--_fill);  
-          }
-  
-          &:has([value="0.5"])::after {
-            inset: 4px;
-            width: 4px;
-            aspect-ratio: 1 / 2;
-            border-radius: 100% 0 0 100%;
-          }
-  
-          &:has([value="2"]) {
-            &::before {
-              inset: 1px;
-              border-width: 2px;
-            }
-  
-            &::after {
-              inset: 5px;
-              border-radius: 100%;
-            }
-          }
-        }
-  
-        input {
-          position: absolute;
-          inset-block-start: -100px;
-          width: 1px;
-          height: 1px;
-          opacity: 0;
-        }
-      `);
-    }
-    this.#shadowRoot.adoptedStyleSheets = [this.constructor._stylesheet];
+  /** @inheritDoc */
+  _adoptStyleSheet(sheet) {
+    this.#shadowRoot.adoptedStyleSheets = [sheet];
   }
 
   /* -------------------------------------------- */
@@ -28709,7 +28756,7 @@ class ProficiencyCycleElement extends HTMLElement {
    */
   #buildHTML() {
     const div = document.createElement("div");
-    this.#shadowRoot.appendChild(div);
+    this.#shadowRoot.replaceChildren(div);
 
     const input = document.createElement("input");
     input.setAttribute("type", "number");
@@ -28936,6 +28983,7 @@ window.customElements.define("slide-toggle", SlideToggleElement);
 
 var _module$c = /*#__PURE__*/Object.freeze({
   __proto__: null,
+  AdoptedStyleSheetMixin: AdoptedStyleSheetMixin,
   EffectsElement: EffectsElement,
   FiligreeBoxElement: FiligreeBoxElement,
   IconElement: IconElement,
@@ -31347,7 +31395,7 @@ class TokenConfig5e extends TokenConfig {
     let ringTab = document.createElement("div");
     const flags = this.document.getFlag("dnd5e", "tokenRing") ?? {};
     ringTab.innerHTML = await renderTemplate(this.constructor.dynamicRingTemplate, {
-      flags: foundry.utils.mergeObject(flags, { scaleCorrection: 1 }, { inplace: false }),
+      flags: foundry.utils.mergeObject({ scaleCorrection: 1 }, flags, { inplace: false }),
       effects: Object.entries(CONFIG.DND5E.tokenRings.effects).reduce((obj, [key, label]) => {
         const mask = CONFIG.Token.ringClass.effects[key];
         obj[key] = { label, checked: (flags.effects & mask) > 0 };
@@ -32204,8 +32252,8 @@ class TokenRing {
   async flashColor(color, animationOptions={}) {
     if ( !this.enabled || Number.isNaN(color) ) return;
 
-    const originalColor = new Color(foundry.utils.mergeObject(
-      this.token.document.getFlag("dnd5e", "tokenRing.color") ?? { ring: 0xFFFFFF },
+    const originalColor = Color.from(foundry.utils.mergeObject(
+      this.token.document.getFlag("dnd5e", "tokenRing.colors") ?? { ring: 0xFFFFFF },
       this.token.document.getRingColors(),
       { inplace: false }
     ).ring).littleEndian;
@@ -33759,7 +33807,7 @@ class ConsumableData extends ItemDataModel.mixin(
     if ( !this.type.value ) return;
     const config = CONFIG.DND5E.consumableTypes[this.type.value];
     if ( config ) {
-      this.type.label = this.type.subtype ? config.subtypes[this.type.subtype] : config.label;
+      this.type.label = config.subtypes?.[this.type.subtype] ?? config.label;
     } else {
       this.type.label = game.i18n.localize(CONFIG.Item.typeLabels.consumable);
     }
@@ -33867,7 +33915,7 @@ class FeatData extends ItemDataModel.mixin(
     if ( !this.type.value ) return;
     const config = CONFIG.DND5E.featureTypes[this.type.value];
     if ( config ) {
-      this.type.label = this.type.subtype ? config.subtypes[this.type.subtype] : config.label;
+      this.type.label = config.subtypes?.[this.type.subtype] ?? null;
     } else {
       this.type.label = game.i18n.localize(CONFIG.Item.typeLabels.feat);
     }
@@ -37033,6 +37081,7 @@ const migrateWorld = async function() {
     try {
       const flags = { persistSourceMigration: false };
       const source = valid ? actor.toObject() : game.data.actors.find(a => a._id === actor.id);
+      const version = actor._stats.systemVersion;
       let updateData = migrateActorData(source, migrationData, flags);
       if ( !foundry.utils.isEmpty(updateData) ) {
         console.log(`Migrating Actor document ${actor.name}`);
@@ -37041,7 +37090,7 @@ const migrateWorld = async function() {
         }
         await actor.update(updateData, {enforceTypes: false, diff: valid && !flags.persistSourceMigration});
       }
-      if ( actor.effects && actor.items && foundry.utils.isNewerVersion("3.0.0", actor._stats.systemVersion) ) {
+      if ( actor.effects && actor.items && foundry.utils.isNewerVersion("3.0.3", version) ) {
         const deleteIds = _duplicatedEffects(actor);
         if ( deleteIds.size ) await actor.deleteEmbeddedDocuments("ActiveEffect", Array.from(deleteIds));
       }
@@ -37182,13 +37231,16 @@ const migrateCompendium = async function(pack) {
     try {
       const flags = { persistSourceMigration: false };
       const source = doc.toObject();
-      switch (documentName) {
+      switch ( documentName ) {
         case "Actor":
           updateData = migrateActorData(source, migrationData, flags);
           if ( (documentName === "Actor") && source.effects && source.items
-            && foundry.utils.isNewerVersion("3.0.0", source._stats.systemVersion) ) {
+            && foundry.utils.isNewerVersion("3.0.3", source._stats.systemVersion) ) {
             const deleteIds = _duplicatedEffects(source);
-            if ( deleteIds.size ) await doc.deleteEmbeddedDocuments("ActiveEffect", Array.from(deleteIds));
+            if ( deleteIds.size ) {
+              if ( flags.persistSourceMigration ) source.effects = source.effects.filter(e => !deleteIds.has(e._id));
+              else await doc.deleteEmbeddedDocuments("ActiveEffect", Array.from(deleteIds));
+            }
           }
           break;
         case "Item":
@@ -37578,7 +37630,7 @@ function _duplicatedEffects(parent) {
       if ( !effect.transfer ) continue;
       const match = parent.effects.find(t => {
         const diff = foundry.utils.diffObject(t, effect);
-        return t.origin.endsWith(`Item.${item._id}`) && !("changes" in diff) && !deleteIds.has(t._id);
+        return t.origin?.endsWith(`Item.${item._id}`) && !("changes" in diff) && !deleteIds.has(t._id);
       });
       if ( match ) deleteIds.add(match._id);
     }

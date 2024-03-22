@@ -3994,6 +3994,13 @@ p:empty:has(+ .content-embed),
   padding: 0 0.5rem;
   flex: none;
 }
+.dnd5e2.create-document .dialog-buttons select {
+  flex: 1;
+  min-block-size: 28px;
+}
+.dnd5e2.create-document .dialog-buttons button {
+  flex: 1 0 50%;
+}
 /* ---------------------------------- */
 /*  Active Effects Pane               */
 /* ---------------------------------- */
@@ -4917,6 +4924,7 @@ p:empty:has(+ .content-embed),
 }
 .dnd5e2.sheet.actor.character .sheet-body .sidebar .favorites > ul .info .primary.uses input {
   background: none;
+  padding: 0;
 }
 .dnd5e2.sheet.actor.character .sheet-body .sidebar .favorites > ul .info .primary.uses input:hover,
 .dnd5e2.sheet.actor.character .sheet-body .sidebar .favorites > ul .info .primary.uses input:focus {
